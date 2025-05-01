@@ -76,5 +76,4 @@
     	branch = main
 [submodule "inference/ctranslate2-deltalm"]
 	path = inference/ctranslate2-deltalm
-	url = ../inference/ctranslate2-deltalm.git
-	branch = v4.5.0-deltalm
+	url = https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/inference/ctranslate2-deltalm
