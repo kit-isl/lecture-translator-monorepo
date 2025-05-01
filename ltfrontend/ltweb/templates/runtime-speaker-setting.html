@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            padding-left: 20px;
+            background-color: #e9e9e9;
+            border: 0px solid #a5a5a5;
+            font-family: Verdana;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0px;
+        }
+
+        li {
+            margin-left: 5px;
+            margin-right: 5px;
+            align-items: center;
+            display: flex;
+            border-bottom: 1px solid #F1F1F1;
+        }
+        
+        input[type="checkbox"] {
+            margin: 15px;
+        }
+        
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border-radius: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: 0px;
+            cursor: pointer;
+        }
+        
+        .highlight {
+            background-color: #ccc;
+        }
+
+        .text-highlight {
+            background-color: yellow;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            background-color: rgba(70,100,170, 1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-top: 40px;
+            margin: 10px;
+            border: none;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+          }
+        .action-button a {
+            color: white
+        }
+        .action-button:hover {
+            background-color: rgba(70,100,170, 1);
+        }
+        .tagify {
+            background-color: #f9f9f9; /* Very light gray */
+            border: 1px solid #ddd; /* Optional: adding a border */
+            padding: 5px; /* Optional: adding some padding */
+            border-radius: 5px; /* Optional: rounded corners */
+        }
+        
+        
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.min.js"></script>
+</head>
+<body>
+    <h2 id="title">Tagging speaker turns</h2>
+    <p id="seed-info"></p>
+    <p id="related-title" hidden>Select turns may come from the same speaker:</p>
+    <ul id="related"></ul>
+    <div id="tag-speaker" style="margin-bottom: 10px;" hidden>
+        <div>
+            <p style="display: inline;" id="setting-spk-name">Choose or create speaker:</p>
+            <input name="tags" value="" style="display: inline; border-color: #888;">
+        </div>
+        <div>
+            <p style="display: inline;">Reset and update speaker</p>
+            <input type="checkbox" id="new-speaker">
+        </div>
+    </div>
+    <p id="message-alert" style="color: red;"></p>
+    <div style="display: flex; justify-content: center;">
+        <button id="save" class="action-button" hidden style="margin: 0 10px;">Save</button>
+        <button id="remove" class="action-button" hidden style="margin: 0 10px;">Remove All Speakers</button>
+    </div>
+    <script>
+        window.addEventListener('message', (event) => {
+            const { text, wordOrder, session_id, stream_id, all_word_order, profile_id} = event.data;
+            if (text === undefined) {
+                return;
+            }
+            console.log('Iframe received data:', event.data);
+            document.getElementById('seed-info').innerText = 'Loading...';
+            const ul = document.getElementById('related');
+            ul.innerHTML = ''; // Clear the content first
+            //hide related title
+            document.getElementById('related-title').style.display = 'none';
+            //hide save button
+            document.getElementById('save').style.display = 'none';
+            document.getElementById('remove').style.display = 'none';
+            //hide tagify
+            document.getElementById('tag-speaker').style.display = 'none';
+            document.getElementById('message-alert').textContent = '';
+            document.getElementById('setting-spk-name').textContent = `Choose or create speaker for ${profile_id}:`;
+            let start_word_id = all_word_order[0]
+            let end_word_id = all_word_order[1]
+            let target_word_id = wordOrder
+            let max_window_size = 500
+
+            if (end_word_id - start_word_id > max_window_size) {
+                start_word_id = Math.max(0, target_word_id - (max_window_size / 2))
+                end_word_id = Math.min(all_word_order[1], start_word_id + max_window_size)
+                console.log('Too many words selected. Reduce the number of words selected to', max_window_size)
+                console.log('New start_word_id:', start_word_id)
+                console.log('New end_word_id:', end_word_id)
+            }
+            
+            const request_similar_turn_data = fetch('/get-similar-turn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: session_id,
+                    stream_id: stream_id,
+                    start_word_id: start_word_id,
+                    end_word_id: end_word_id,
+                    target_word_id: target_word_id
+                }),
+            }).then(response => response.json());
+
+
+            const request_speaker_map = fetch('/get-spk-cluster',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: session_id,
+                    stream_id: stream_id
+                }),
+            }).then(response => response.json());
+
+            Promise.all([request_similar_turn_data, request_speaker_map])
+            .then(([similar_turn_data, speaker_map]) => {
+                console.log(similar_turn_data, speaker_map);
+
+                console.log("similar_turn_data", similar_turn_data)
+                similar_turn_data.forEach((item) => {
+                    const li = document.createElement('li');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.setAttribute("order", item.word_id);
+                    checkbox.id = "similar-option"
+                    li.appendChild(checkbox);
+                    
+                    if (item.word_id.includes(Number(target_word_id))) {
+                        const span = document.createElement('span');
+                        span.classList.add('text-highlight');
+                        span.textContent = item.words;
+                        li.appendChild(span);
+                    }else{
+                        li.appendChild(document.createTextNode(item.words));
+                    }
+                    ul.appendChild(li);
+                });
+
+                //console.log("speaker_map", speaker_map)
+                //speaker_map = {"spk-1": [1,2,3], "spk-2": [3,4,5]}
+                let existingSpeakers = Object.keys(speaker_map);
+                tagify.settings.whitelist = existingSpeakers;
+
+                document.getElementById('seed-info').innerHTML = `<strong>Word selected</strong>: <span class="text-highlight">${text}</span>`;
+                document.getElementById('seed-info').setAttribute('session_id', session_id)
+                document.getElementById('seed-info').setAttribute('stream_id', stream_id)
+                document.getElementById('seed-info').setAttribute('profile_id', profile_id)
+                //show related title
+                document.getElementById('related-title').style.display = 'block';
+                //show save button
+                document.getElementById('save').style.display = 'block';
+                document.getElementById('remove').style.display = 'block';
+                // show tagify
+                document.getElementById('tag-speaker').style.display = 'block';
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        });
+
+        // Add event listener to checkboxes
+        document.addEventListener('change', (event) => {
+            if (event.target.type === 'checkbox' && event.target.id === 'similar-option') {
+                const li = event.target.parentNode;
+                li.classList.toggle('highlight');
+            }
+        });
+
+        tagify = new Tagify(document.querySelector('input[name=tags]'), {
+            maxTags:1,
+            dropdown: {
+                position: 'input',
+                enabled: 0 // always opens dropdown when input gets focus
+            }
+        });
+
+        document.getElementById('remove').addEventListener('click', () => {
+            
+            const request_update_speaker_map = fetch('/remove-spk-cluster',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: document.getElementById('seed-info').getAttribute('session_id'),
+                    stream_id: document.getElementById('seed-info').getAttribute('stream_id'),
+                    profile_id: document.getElementById('seed-info').getAttribute('profile_id')
+                }),
+            }).then(response => response.json());
+
+            request_update_speaker_map.then((response) => {
+                console.log(response);
+                //alert('Updating speaker result:' + response.status);
+                if (response.status) {
+                    document.getElementById('message-alert').setAttribute('style', 'color: green;');
+                    document.getElementById('message-alert').textContent = 'Updating speaker successful';
+                    window.top.hideTurnSetting();
+                }else{
+                    document.getElementById('message-alert').setAttribute('style', 'color: red;');
+                    document.getElementById('message-alert').textContent = 'Updating speaker failed. Message: ' + response;
+                }
+            }).catch(error => {
+                console.error(error);
+            }).finally(() => {
+                document.querySelector('input[name=tags]').value = '';
+                document.getElementById('new-speaker').checked = false;
+            });
+        });
+
+        // Add event listener to save button
+        document.getElementById('save').addEventListener('click', () => {
+            const selectedTurns = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).filter((checkbox) => {
+                return checkbox.id === 'similar-option';
+            }).map((checkbox) => {
+                const order = checkbox.getAttribute('order');
+                const text = checkbox.parentNode.textContent.trim();
+                return { order, text };
+            });
+
+            let selectedSpeaker = ''; // Initialize selectedSpeaker variable
+            try {
+                selectedSpeaker = tagify.value[0].value;
+            } catch (error) {
+                // Handle error if tagify.value is undefined
+            }
+            if (selectedSpeaker === '') {
+                document.getElementById('message-alert').setAttribute('style', 'color: red;');
+                document.getElementById('message-alert').textContent = 'Please select a speaker.';
+                return;
+            }
+
+            if (selectedSpeaker.toLowerCase() === 'unk' || selectedSpeaker.toLowerCase().startsWith('unk-')) {
+                document.getElementById('message-alert').setAttribute('style', 'color: red;');
+                document.getElementById('message-alert').textContent = "Can't assign speaker 'unk'.";
+                return;
+            }
+
+            const isNewSpeakerChecked = document.getElementById('new-speaker').checked;
+
+            if (selectedTurns.length === 0 && !isNewSpeakerChecked) {
+                // alert('Please select at least one turn or check the reset and update speaker checkbox');
+                document.getElementById('message-alert').setAttribute('style', 'color: red;');
+                document.getElementById('message-alert').textContent = 'Please select at least one turn or check the reset and update speaker checkbox';
+                return;
+            }
+
+            const request_update_speaker_map = fetch('/update-spk-cluster',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: document.getElementById('seed-info').getAttribute('session_id'),
+                    stream_id: document.getElementById('seed-info').getAttribute('stream_id'),
+                    profile_id: document.getElementById('seed-info').getAttribute('profile_id'),
+                    speaker_name: selectedSpeaker,
+                    cluster_word_id: selectedTurns.map(turn => turn.order),
+                    reset_and_update: isNewSpeakerChecked
+                }),
+            }).then(response => response.json());
+
+            request_update_speaker_map.then((response) => {
+                console.log(response);
+                //alert('Updating speaker result:' + response.status);
+                if (response.status) {
+                    document.getElementById('message-alert').setAttribute('style', 'color: green;');
+                    document.getElementById('message-alert').textContent = 'Updating speaker successful';
+                    window.top.hideTurnSetting();
+                }else{
+                    document.getElementById('message-alert').setAttribute('style', 'color: red;');
+                    document.getElementById('message-alert').textContent = 'Updating speaker failed. Message: ' + response;
+                }
+            }).catch(error => {
+                console.error(error);
+            }).finally(() => {
+                document.querySelector('input[name=tags]').value = '';
+                document.getElementById('new-speaker').checked = false;
+            });
+        });
+
+    </script>
+</body>
+</html>

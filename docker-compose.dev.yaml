@@ -1,0 +1,49 @@
+version: "3.3"
+
+services:
+    #traefik:
+    #ports:
+    #  - 8081:8080
+
+#  rabbitmq:
+#    ports:
+#      - 15671:15671
+#      - 15672:15672
+#      - 15691:15691
+#      - 15692:15692
+#      - 25672:25672
+#      - 4368:4368
+#      - 5671:5671
+
+  streamingprep:
+    environment:
+      DEBUG: 'True'
+    # volumes:
+    #   - /home/mtasr/LT2.0/ltpipeline/streamingprep/audio:/src/cache
+
+  ltapi:
+      #ports:
+      #- 5000:5000
+    volumes:
+      - './lt_api:/src'
+
+  frontend:
+      #ports:
+      #- 5001:5000
+    volumes:
+      - './ltfrontend:/src'
+    healthcheck:
+      disable: true
+
+  streamingasr:
+    volumes:
+      - './streamingasr:/src'
+    deploy:
+        replicas: 1
+
+  streamingmt:
+    volumes:
+      - './streamingmt:/src'
+    deploy:
+        replicas: 1
+

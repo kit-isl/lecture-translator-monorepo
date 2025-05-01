@@ -1,0 +1,46 @@
+.loading-wrapper {
+        position: fixed; /* Ensures it overlays the page */
+        top: 50%; /* Vertically center */
+        left: 50%; /* Horizontally center */
+        transform: translate(-50%, -50%); /* Adjust for exact centering */
+        z-index: 9999; /* Place it above other elements */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5); /* Optional: Semi-transparent background */
+        width: 100%; /* Optional: Cover full width */
+        height: 100%; /* Optional: Cover full height */
+        pointer-events: none; /* Ensures clicks go through */
+    }
+    .loading-wrapper.hidden {
+        display: none;
+    }
+        #loading-container {
+            width: 80%;
+            max-width: 500px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        #loading-bar {
+            height: 20px;
+            width: 0%;
+            /*background: linear-gradient(90deg, #4caf50, #81c784)*/;
+            background: linear-gradient(90deg, var(--main-color), color-mix(in srgb, var(--main-color) 50%, white 50%));
+            transition: width 0.3s ease;
+        }
+
+        #loading-text {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 20px;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }

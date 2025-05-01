@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+
+    <div class="content">
+
+
+
+    <h1>KIT AI Tutor</h1>
+
+
+
+    <div class="windows-container" id="windows-container">
+        <div class="window">
+          <div class="img-window" id="kitkat">
+              <img class="img" alt="{{ title }}">
+          </div>
+    </div>
+
+
+
+    </div>
+    </div>
+  </div>
+
+    {% include 'mmAssistant/mmAudio.html' %}
+    {% include 'mmAssistant/mmChat.html' %}
+
+<script src="{{ url_for('static', filename='js/eventsource-polyfill.js') }}"></script>
+    <script>
+
+
+
+
+
+
+
+
+
+
+
+    </script>
+  </body>
+</html>

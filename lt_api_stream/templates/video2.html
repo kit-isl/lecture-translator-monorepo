@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Lecture Translator Video Streaming</title>
+
+	<!-- Builds -->
+	<script src="/static/js/hls.min.js"></script>
+</head>
+
+<body>
+	<center>
+		<video id="player" width="540" height="280" controls autoplay></video>
+		<div id="streamroot-graphs"></div>
+	</center>
+
+	<script>
+		// Function to get URL parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+		/*hlsjsConfig = {
+			"maxBufferSize": 10,
+			"maxBufferLength": 30,
+			"liveSyncDurationCount": 5
+			//"liveSyncDuration": 10 // Stay 10 seconds behind live
+		};*/
+
+		var hlsjsConfig = {
+			"maxBufferSize": 10,
+			"maxBufferLength": 30,
+			"liveSyncDurationCount": 1
+		};
+
+		var hls = new Hls(hlsjsConfig);
+
+		var videoElement = document.getElementById('player');
+		var playerId = getUrlParameter('player_id'); // Extract player_id from URL
+		//videoElement.muted = true; // Set the muted attribute
+
+		window.addEventListener('message', (event) => {
+            if (event.data.action === 'setMute') {
+				console.log("trying to change the mute status in video2.html")
+                videoElement.muted = event.data.muted;
+            }
+        });
+
+		hls.loadSource('{{ m3u8 }}');
+		hls.attachMedia(videoElement);
+
+		hls.on(Hls.Events.MANIFEST_PARSED, function () {
+			console.log('Webplayer: Audio loaded.');
+			window.parent.postMessage({
+				type: 'audio-received',
+				playerId: playerId,
+			}, window.location.origin);
+			videoElement.play();
+		});
+
+		/*handleTimeUpdate = function(duration) { 
+			const currentTime = videoElement.currentTime;
+			console.log(`Event playback time: ${currentTime.toFixed(2)} seconds`);
+			console.log(`Event Duration time: ${videoElement.duration} seconds`);
+			// Check if the audio has finished playing
+			if (videoElement.currentTime > videoElement.duration) {
+				console.log('Audio has finished playing.');
+				window.parent.postMessage({
+					type: 'fragment-finished',
+					playerId: playerId,
+				}, window.location.origin);
+			}
+		};
+
+		handleLoadMetaData = function() { 
+			videoElement.removeEventListener('timeupdate', handleTimeUpdate)	
+			videoElement.addEventListener('timeupdate', handleTimeUpdate)
+		};
+
+		videoElement.addEventListener('loadedmetadata', handleLoadMetaData)*/
+		
+		hls.on(Hls.Events.FRAG_LOADED, function (event) {
+			console.log('Webplayer: Audio loaded.');
+			window.parent.postMessage({
+				type: 'audio-received',
+				playerId: playerId,
+			}, window.location.origin);
+		});
+
+		hls.on(Hls.Events.FRAG_CHANGED, function(event, data) {
+			console.log('Fragment finished:', data.frag.sn);
+			// Delay duration in milliseconds
+    		const delayDuration = 1000; // 1 seconds
+
+			// Use setTimeout to delay the message
+			setTimeout(() => {
+				// Notify the parent window that the fragment has finished playing
+				window.parent.postMessage({
+					type: 'fragment-finished',
+					playerId: playerId,
+				}, window.location.origin);
+			}, delayDuration);
+		});
+
+	</script>
+</body>
+
+</html>

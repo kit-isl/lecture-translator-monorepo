@@ -1,0 +1,53 @@
+version: "3.3"
+
+services:
+  traefik:
+    labels:
+      - 'traefik.http.routers.traefik.tls=false'
+      - 'traefik.http.routers.traefik.tls.certresolver='
+
+  dex:
+    environment:
+      DEX_BASE_URL: "http://${DOMAIN_PORT:-${DOMAIN}}"
+    labels:
+      - 'traefik.http.routers.dex.tls=false'
+      - 'traefik.http.routers.dex.tls.certresolver='
+
+  traefik-forward-auth:
+    environment:
+      PROVIDERS_OIDC_ISSUER_URL: 'http://${DOMAIN_PORT:-${DOMAIN}}/dex'
+      LOGOUT_REDIRECT: 'http://${DOMAIN_PORT:-${DOMAIN}}/'
+      INSECURE_COOKIE: 'true'
+
+  ltapi:
+    labels:
+      - 'traefik.http.routers.ltapi.tls=false'
+      - 'traefik.http.routers.ltapi.tls.certresolver='
+      - 'traefik.http.routers.webapi.tls=false'
+      - 'traefik.http.routers.webapi.tls.certresolver='
+      - 'traefik.http.routers.ltapi.rule=(Host(`${DOMAIN}`) || Host(`host.docker.internal`)) && PathPrefix(`/ltapi`)'
+      - 'traefik.http.routers.webapi.rule=(Host(`${DOMAIN}`) || Host(`host.docker.internal`)) && PathPrefix(`/webapi`)'
+
+  ltapi-stream:
+    labels:
+      - 'traefik.http.routers.ltapi-stream.tls=false'
+      - 'traefik.http.routers.ltapi-stream.tls.certresolver='
+      - 'traefik.http.routers.webapi-stream.tls=false'
+      - 'traefik.http.routers.webapi-stream.tls.certresolver='
+      - 'traefik.http.routers.ltapi-stream.rule=(Host(`${DOMAIN}`) || Host(`host.docker.internal`)) && PathPrefix(`/ltapi/stream`)'
+      - 'traefik.http.routers.webapi-stream.rule=(Host(`${DOMAIN}`) || Host(`host.docker.internal`)) && PathPrefix(`/webapi/stream`)'
+
+  frontend:
+    labels:
+      - 'traefik.http.routers.frontend.tls=false'
+      - 'traefik.http.routers.frontend.tls.certresolver='
+
+  archive:
+    labels:
+      - 'traefik.http.routers.archive.tls=false'
+      - 'traefik.http.routers.archive.tls.certresolver='
+
+  mlflow:
+    labels:
+      - 'traefik.http.routers.mlflow.tls=false'
+      - 'traefik.http.routers.mlflow.tls.certresolver='

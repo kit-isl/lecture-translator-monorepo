@@ -1,0 +1,558 @@
+<div class="error-correction-tools-window">
+	{% if errorCorrectionTools == "dialog" %}
+		<input type="text" id="text42" class="text-input-lt" placeholder="Type your message...">
+		<button type="button" id="send-button" class="error-correction-control-button">Send</button>
+	{% endif %}
+	<!--
+	<button type="button" id="load-button">load</button>
+	<button type="button" id="up-button">previous</button>
+	<button type="button" id="down-button">skip</button>
+	-->
+
+	<button type="button" id="play-button" class="error-correction-control-button">play</button>
+
+	{% if correction_mode_deactivated == False %}
+		<button type="button" id="correction-button">correction</button>
+	{% endif %}
+	<!--
+	<button type="button" id="forget-part-button">forget current corrections</button>
+	<button type="button" id="forget-button">restore sentence</button>
+	-->
+	<button type="button" id="audio-button" class="error-correction-control-button">audio</button>
+	<!--
+	<button type="button" id="tts-button">system dialogs</button>
+	-->
+	<button type="button" id="help-button" class="error-correction-control-button">tutorial</button>
+	<button type="button" id="pause-button" class="error-correction-control-button">pause</button>
+
+	{% if correction_mode_deactivated == True %}
+		<button type="button" id="next-text-button" class="error-correction-control-button">next text</button>
+	{% endif %}
+
+	<div class="error-correction-info-window" id="error-correction-help-window">
+		<div class="error-correction-info-window-header">
+			<h2>Tutorial</h2>
+			<button id="error-correction-help-close-button" class="close-error-correction-info-window-button">X</button>
+		</div>
+		<div id="error-correction-info-finish-text">
+		The button to finish the tutorial is at the bottom of the page.
+		</div>
+		<video id="error-correction-tutorial-video" width="80%" controls >
+			<source src="https://i13hpc51.isl.iar.kit.edu/stefan/static/Tutorial.mp4" type="video/mp4"></source>
+		</video>
+		<div>
+		<ul>
+		<li>The goal is to correct the English Automatic Transcript with Errors on the right side to get the same text as in the English Reference on the left side. The differences are bold in both texts. If something is missing in comparison to the other text, a long underscore is used for that.</li>
+		<li>To start a correction, select the text you want to correct.</li>
+		<li>Unmute the microphone.</li>
+		<li>Make a correction, for example, it's a slash not a hyphen.</li>
+		<li>Wait some seconds until the system corrects the selected text, check with help of the reference on the left side if the text is correct.</li>
+		<li>If not, you can try again or make a new selection if you think the first selection had too many or too less context, in general, how much you select is your own decision.</li>
+		<li>The long underscores are only a visualization for you, the correction system does not see them. Therefore, do not mention these underscores in your corrections.</li>
+		<li>To insert only missing parts, you can click instead of selecting some text and speak what should be inserted, for example, insert operating.</li>
+		<li>Operating with o in the beginning.</li>
+		<li>You can say something like "undo all corrections" to undo all corrections from the current selection or something like "undo the last correction" to undo only the last correction.</li>
+		<li>Pay attention if you introduced new errors. Please correct your introduced errors too because in the end both texts should be the same.</li>
+		<li>If you think there are too many background noises, unmute only the microphone when you start to speak and mute it afterwards.</li>
+		<li>You can open this tutorial again by clicking on the tutorial button.</li>
+		<li>You can pause your current session by clicking on the pause button.</li>
+		<li>If you pause more than two times your session by clicking on the tutorial or pause button, the session is aborted and a new text is open. Avoid to that, but if you have reasons for it, it is no problem.</li>
+		<li>If you are done correcting (either you corrected all errors or gave up to correct the remaining errors), do a new text by clicking next text or exit the correction by clicking on end lecture, if you open the link again, you can continue with a new text.</li>
+		</ul>
+		</div>
+		<div id="error-correction-agreement-text">
+		Do you agree that your collected data is used anonymized for scientific reasearch? If yes, check the checkbox. <input type="checkbox" id="error-correction-agreement-checkbox" name="agree" value="agree">
+			<button type="button" id="error-correction-agreement-okay" class="error-correction-control-button">ok</button>
+		</div>
+	</div>
+
+	<div class="error-correction-info-window" id="error-correction-pause-window">
+		<div class="error-correction-info-window-header">
+			<h2>Pause</h2>
+			<button id="error-correction-pause-close-button" class="close-error-correction-info-window-button">X</button>
+		</div>
+		<div>
+		You can pause twice during the correction of a text, after finishing the third pause a new text is opened. That is no problem. Pause if you need a pause or you have something important to do, but do not pause to try to accelerate your correction times.
+		</div>
+	</div>
+
+	<div id="end-correction-dialog" class="modal">
+		<div class="modal-content">
+			<p id="number-remaining-errors-text">There are errors remaining.</p>
+			<div class="modal-actions">
+				<button id="confirm-buton-end-correction" class="language-button">Confirm</button>
+				<button id="cancel-buton-end-correction" class="language-button">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<script>
+
+var errorCorrectionToolsStreamId = null;
+
+var correctionModeDeactivated  = {{ correction_mode_deactivated|tojson }};
+var receivedGroundThruthData = false;
+var receivedTranscriptData = false;
+var errorCorrectionTaskName = '';
+
+var numberRemainingErrors = null;
+var usedPauses = 0;
+
+if (correctionModeDeactivated) {
+	recordIcon.removeEventListener("click", recording);
+	recordIcon.addEventListener("click", showSelectionRequest);
+}
+
+const tutorialVideo = document.getElementById('error-correction-tutorial-video');
+tutorialVideo.pause();
+
+function initErrorCorrectionToolsConnections() {
+	fetch('{{ server }}/{{ session }}/addErrorCorrectionToolsStream', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		}
+	})
+	.then((response) => response.json())
+	.then((data) => {
+		console.log('Error correction tools stream ID:', data);
+		errorCorrectionToolsStreamId = data;
+		setTimeout(keeAliveErrorCorrectionTools, 60000);
+	});
+
+	var source = new EventSource("{{ server }}/stream?channel={{ session }}",{
+	headers: {
+		'Content-Type': 'text/event-stream',
+		'Cache-Control': 'no-cache',
+		'Connection': 'keep-alive',
+		'X-Accel-Buffering': 'no'
+		}
+	});
+
+	source.addEventListener('message', function(e) {
+		parseMessage(e)
+	});
+}
+
+setTimeout(initErrorCorrectionToolsConnections, 3000);
+
+function activateIFrame(ttsId) {
+	const iframe = document.getElementById('video-iframe-' + ttsId);
+	console.log('TTS id and iframe object:', ttsId, iframe);
+	if (iframe !== null) {
+		// toggleAudioButton("ttsbutton-" + ttsId);
+		muteControlAudioPlayer('video-iframe-' + ttsId, false);
+	} else {
+		setTimeout(activateIFrame, 1000, ttsId);
+	}
+}
+
+function reloadIfNecessary() {
+	if (correctionModeDeactivated && (!receivedGroundThruthData || !receivedTranscriptData)) {
+		sendErrorCorrectionToolsMessage("load");
+		setTimeout(() => {
+			reloadIfNecessary();
+		}, 2000);
+	}
+}
+
+setTimeout(() => {
+	// const ttsButtonId = document.getElementsByClassName("tts-button")[0].id.match(/-(\d+)/)[1];
+	// activateIFrame(ttsButtonId);
+	reloadIfNecessary();
+	}, 2000);
+
+function sendErrorCorrectionToolsMessage(messageString) {
+	if (errorCorrectionToolsStreamId === null) {
+		console.log('no connection to error correction tools');
+		return;
+	}
+
+	fetch('{{ server }}/{{ session }}/' + errorCorrectionToolsStreamId + '/append', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(JSON.stringify({'seq': messageString}))
+	});
+}
+
+function keeAliveErrorCorrectionTools() {
+	sendErrorCorrectionToolsMessage("keep-alive");
+	setTimeout(keeAliveErrorCorrectionTools, 60000);
+}
+
+function showSelectionRequest() {
+	alert('Select some text of the transcript');
+}
+
+const agreed_error_correction_eval_str = {{ agreed_error_correction_eval|tojson }};
+var agreed_error_correction_eval = agreed_error_correction_eval_str == 'agreed';
+
+const chatInput = document.getElementById('text42');
+const chatButton = document.getElementById('send-button');
+
+/*
+const loadButton = document.getElementById('load-button');
+const upButton = document.getElementById('up-button');
+const downButton = document.getElementById('down-button');
+*/
+const playButton = document.getElementById('play-button');
+const audioButton = document.getElementById('audio-button');
+{% if correction_mode_deactivated == False %}
+	const correctionButton = document.getElementById('correction-button');
+	correctionButton.style.background = null;
+{% endif %}
+/*
+const forgetPartButton = document.getElementById('forget-part-button');
+const forgetButton = document.getElementById('forget-button');
+const ttsButton = document.getElementById('tts-button');
+*/
+const helpButton = document.getElementById('help-button');
+const pauseButton = document.getElementById('pause-button');
+
+{% if correction_mode_deactivated == True %}
+	const nextTextButton = document.getElementById('next-text-button');
+{% endif %}
+
+const helpWindow = document.getElementById('error-correction-help-window');
+const helpWindowCloseButton = document.getElementById('error-correction-help-close-button');
+const errorCorrectionInfoFinishText = document.getElementById('error-correction-info-finish-text');
+const errorCorrectionAgreementText = document.getElementById('error-correction-agreement-text');
+const errorCorrectionAgreementCheckbox = document.getElementById('error-correction-agreement-checkbox');
+const errorCorrectionAgreementOkayButton = document.getElementById('error-correction-agreement-okay');
+const pauseWindow = document.getElementById('error-correction-pause-window');
+const pauseWindowCloseButton = document.getElementById('error-correction-pause-close-button');
+const endCorrectionDialog = document.getElementById('end-correction-dialog');
+const numberRemainingErrorsText = document.getElementById('number-remaining-errors-text');
+const confirmBtnEndCorrection = document.getElementById('confirm-buton-end-correction');
+const cancelBtnEndCorrection = document.getElementById('cancel-buton-end-correction');
+const endLectureDialogText = document.getElementById('end-lecture-dialog-text');
+
+if (agreed_error_correction_eval) {
+	helpWindow.style.display = 'none';
+	errorCorrectionInfoFinishText.style.display = 'none';
+	errorCorrectionAgreementText.style.display = 'none';
+} else {
+	helpWindowCloseButton.style.display = 'none';
+	helpWindow.style.display = 'block';
+	tutorialVideo.play();
+}
+
+pauseWindow.style.display = 'none';
+endCorrectionDialog.style.display = 'none';
+
+var audioActivated = true;
+var timerVideo = null;
+var jumpIdOfTimer = null;
+var currentTimeOfTimer = null;
+var lastJumpId = -1;
+
+audioButton.style.background = "green";
+// ttsButton.style.background = null;
+
+/*
+loadButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("load");
+});
+
+upButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("previous");
+});
+
+downButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("skip");
+});
+*/
+
+playButton.addEventListener('click', () => {
+	audioActivated = true;
+	audioButton.style.background = "green";
+	sendErrorCorrectionToolsMessage("play");
+});
+
+audioButton.addEventListener('click', () => {
+	if (audioActivated) {
+		audioActivated = false;
+		audioButton.style.background = null;
+		const videoIFrame = document.querySelectorAll('[id^="video-iframe"]')[0];
+		if (videoIFrame !== undefined) {
+			const iframeVideoPlayer = videoIFrame.contentWindow.document.getElementById("player");
+			if (iframeVideoPlayer !== null) {
+				iframeVideoPlayer.pause();
+			}
+		}
+	} else {
+		audioActivated = true;
+		audioButton.style.background = "green";
+	}
+});
+
+{% if correction_mode_deactivated == False %}
+correctionButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("correction");
+});
+{% endif %}
+
+/*
+forgetPartButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("forget_part");
+});
+
+forgetButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("forget");
+});
+
+ttsButton.addEventListener('click', () => {
+	sendErrorCorrectionToolsMessage("tts");
+});
+*/
+
+helpButton.addEventListener('click', () => {
+	helpWindow.style.display = 'block';
+	tutorialVideo.play();
+	usedPauses++;
+	sendErrorCorrectionToolsMessage(`pause ${Date.now()}`);
+});
+
+pauseButton.addEventListener('click', () => {
+	pauseWindow.style.display = 'block';
+	usedPauses++;
+	sendErrorCorrectionToolsMessage(`pause ${Date.now()}`);
+});
+
+function openNextText() {
+	if (correctionModeDeactivated && numberRemainingErrors > 0) {
+		numberRemainingErrorsText.innerText = `There are ${numberRemainingErrors} errors remaining.`;
+		endCorrectionDialog.style.display = 'block';
+	} else {
+		sendOpenNextTextRequest();
+	}
+}
+
+function sendOpenNextTextRequest() {
+    sent_end = true;
+	fetch('{{ server }}/{{ session }}/0/append', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(JSON.stringify({ "controll": "END" }))
+	});
+
+	const data = {'task': errorCorrectionTaskName, 'user': {{user | tojson}}};
+	fetch('{{ server }}/set_text_as_done', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(data)
+	})
+	.then((response) => response.text())
+	.then((data) => {
+		setTimeout(function () {
+			window.location.href = window.location.href;
+		}, 1000);
+	});
+}
+
+{% if correction_mode_deactivated == True %}
+	nextTextButton.addEventListener('click', () => {
+		openNextText();
+	});
+{% endif %}
+
+helpWindowCloseButton.addEventListener('click', () => {
+	tutorialVideo.pause();
+	if (usedPauses < 3) {
+		helpWindow.style.display = 'none';
+		sendErrorCorrectionToolsMessage(`continue ${Date.now()}`);
+	}  else {
+		openNextText();
+	}
+});
+
+errorCorrectionAgreementOkayButton.addEventListener('click', () => {
+	if (!errorCorrectionAgreementCheckbox.checked) {
+		alert("You must agree to the terms to continue.");
+		return;
+	}
+
+	helpWindow.style.display = 'none';
+	tutorialVideo.pause();
+	const data = {'user': {{user | tojson}}};
+	fetch('{{ server }}/save_agreement_to_error_correction_eval', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(data)
+	})
+	.then((response) => response.text())
+	.then((data) => {
+		agreed_error_correction_eval = true;
+		errorCorrectionInfoFinishText.style.display = 'none';
+		errorCorrectionAgreementText.style.display = 'none';
+	});
+});
+
+pauseWindowCloseButton.addEventListener('click', () => {
+	if (usedPauses < 3) {
+		pauseWindow.style.display = 'none';
+		sendErrorCorrectionToolsMessage(`continue ${Date.now()}`);
+	} else {
+		openNextText();
+	}
+});
+
+confirmBtnEndCorrection.onclick = function() {
+          sendOpenNextTextRequest();
+          endCorrectionDialog.style.display = 'none';
+}
+
+cancelBtnEndCorrection.onclick = function() {
+	endCorrectionDialog.style.display = 'none';
+}
+
+// Handle user message submission
+if (chatButton != null) {
+	chatButton.addEventListener('click', (e) => {
+		e.preventDefault();
+		const userMessage = chatInput.value;
+		sendErrorCorrectionToolsMessage("chat " + userMessage);
+		chatInput.value = '';
+	});
+}
+
+// Handle message input key press
+if (chatInput != null) {
+	chatInput.addEventListener('keypress', (event) => {
+		if (event.key === 'Enter') {
+			const userMessage = chatInput.value;
+			sendErrorCorrectionToolsMessage("chat " + userMessage);
+			chatInput.value = '';
+		}
+	});
+}
+
+// todo implement mutex
+function changeCurrentTimeOfVideoPlayer() {
+	if (jumpIdOfTimer <= lastJumpId) {
+		return;
+	}
+
+	const videoIFrame = document.querySelectorAll('[id^="video-iframe"]')[0];
+	if (videoIFrame !== undefined) {
+		const iframeVideoPlayer = videoIFrame.contentWindow.document.getElementById("player");
+		if (iframeVideoPlayer !== null) {
+			lastJumpId = jumpIdOfTimer;
+			iframeVideoPlayer.currentTime = currentTimeOfTimer;
+			iframeVideoPlayer.muted = false;
+			if (audioActivated) {
+				iframeVideoPlayer.play();
+			} else {
+				iframeVideoPlayer.pause();
+			}
+		return;
+		}
+	}
+
+	timerVideo = setTimeout(changeCurrentTimeOfVideoPlayer, 1000);
+}
+
+function parseMessage(e) {
+	const data = JSON.parse(e.data);
+
+	if (data.sender === "correctionGroundTruth:ErrorCorrectionGroundTruthViewer0") {
+		receivedGroundThruthData = true;
+	}
+
+	if (data.sender === "correctionTranscript:ErrorCorrectionTranscriptViewer0") {
+		receivedTranscriptData = true;
+		if (Object.hasOwn(data, 'nre')) {
+			numberRemainingErrors = data.nre;
+			if (numberRemainingErrors > 0) {
+				endLectureDialogText.innerText = `There are ${numberRemainingErrors} errors remaining. Are you sure you want to end this session?`;
+			} else {
+				endLectureDialogText.innerText = "Are you sure you want to end this session?";
+			}
+		}
+	}
+
+	if (data.sender === "tts:0" && 'jumpTo' in data && data.jumpTo !== null && data.jumpTo[0] > lastJumpId) {
+		const videoIFrame = document.querySelectorAll('[id^="video-iframe"]')[0];
+		if (videoIFrame !== undefined) {
+			const currentTime = data.jumpTo[1];
+			const iframeVideoPlayer = videoIFrame.contentWindow.document.getElementById("player");
+			if (iframeVideoPlayer !== null) {
+				lastJumpId = data.jumpTo[0];
+				iframeVideoPlayer.currentTime = currentTime;
+				iframeVideoPlayer.muted = false;
+				if (audioActivated) {
+					iframeVideoPlayer.play();
+				} else {
+					iframeVideoPlayer.pause();
+				}
+			}
+		} else {
+			jumpIdOfTimer = data.jumpTo[0];
+			currentTimeOfTimer = data.jumpTo[1];
+			if (timerVideo === null) {
+				timerVideo = setTimeout(changeCurrentTimeOfVideoPlayer, 1000);
+			}
+		}
+	}
+
+	if (data.sender === "correction:asrErrorCorrection0" && "seq" in data) {
+		if (data.seq.startsWith('TTS STATUS ')) {
+			/*
+			if (data.seq === 'TTS STATUS True') {
+				ttsButton.style.background = "green";
+			} else {
+				ttsButton.style.background = null;
+			}
+			*/
+		} else if (data.seq.startsWith('CORRECTION STATUS ')) {
+			if (data.seq === 'CORRECTION STATUS True') {
+				correctionButton.style.background = "green";
+			} else {
+				correctionButton.style.background = null;
+			}
+		} else if (data.seq === 'REMOVE ALL SELECTION RANGES' && !isMouseDown) {
+			document.getSelection().removeAllRanges();
+		} else if (data.seq.startsWith('REMOVE HIGHLIGHT SENTENCE ')) {
+			const re_match = data.seq.match(/REMOVE HIGHLIGHT SENTENCE (\d+)/);
+			for (let window of document.querySelectorAll('.window')) {
+				if (window.firstChild !== null && window.firstChild.firstChild != null && window.firstChild.firstChild.data.includes('Transcript')) {
+					const windowContent = window.children[1];
+					for (let sentenceSpan of windowContent.children) {
+						if (sentenceSpan.getAttribute('start') === re_match[1]) {
+							for (let subsentenceSpan of sentenceSpan.querySelectorAll('span')) {
+								if (subsentenceSpan.hasAttribute('style')) {
+									subsentenceSpan.removeAttribute('style');
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if (data.seq === 'VALID_SELECTION') {
+			recordIcon.removeEventListener("click", showSelectionRequest);
+			recordIcon.addEventListener("click", recording);
+		} else if (data.seq.startsWith('TASK-')) {
+			errorCorrectionTaskName = data.seq.replace(/^TASK-/, '');
+			sendErrorCorrectionToolsMessage('DATASET TO DO RECEIVED');
+		}
+	}
+}
+
+
+
+</script>

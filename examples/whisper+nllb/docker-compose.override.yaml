@@ -1,0 +1,11 @@
+
+version: "3.3"
+
+services:
+  streamingmt:
+    volumes:
+      - ${PWD}/config_mt.json:/src/config.json:ro
+
+  streamingasr:
+    volumes:
+      - ${PWD}/config_asr.json:/src/config.json:ro

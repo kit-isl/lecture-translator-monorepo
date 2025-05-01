@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>KIT Lecture Translator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .grey-row {
+        background-color: #f2f2f2;
+      }
+      .icon {
+        vertical-align: middle;
+        padding-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+    <h1>Contact</h1>
+    <table>
+      <tr class="grey-row">
+        <td><img class="icon" src="https://isl.anthropomatik.kit.edu/img/header_isl_neu.jpg" alt="ISL icon" width="50" height="50">Karlsruhe Institute of Technology (KIT)<br>Institute for Anthropomatics and Robotics (IAR)<br>Interactive Systems Labs (ISL)<br>Chair Prof. Alex Waibel<br>Adenauerring 2 (Building 50.20)<br>76131 Karlsruhe, Germany</td>
+        <td><img class="icon" src="https://pbs.twimg.com/profile_images/1641793512311083012/5GthVviF_400x400.jpg" alt="AI4LT icon" width="50" height="50">Karlsruhe Institute of Technology (KIT)<br>Artificial Intelligence for Language Technologies (AI4LT)<br>Institut für Anthropomatik und Robotik (IAR)<br>Chair Prof. Jan Niehues<br>Adenauerring 2 (Building 50.20)<br>76131 Karlsruhe, Germany</td>
+      </tr>
+      <tr>
+        <td><img class="icon" src="https://cdn-icons-png.flaticon.com/512/561/561131.png" alt="AI4LT" width="25" height="25">Tel.: +49 (0)721 608-44730<br><img class="icon"  alt="fax icon" width="25" height="25">Fax.: +49 (0)721 60 77 21<br><img class="icon" src="https://cdn-icons-png.flaticon.com/512/561/561127.png" alt="email icon" width="25" height="25">email: margit.roedder@kit.edu    
+        </td>
+        <td></td>
+      </tr>
+    </table>
+  </body>
+</html>
+

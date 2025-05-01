@@ -1,0 +1,188 @@
+    <!-- Chat Window -->
+    <div class="chat-window">
+      <div class="chat-header">
+        <h2>KIT AI Tutor</h2>
+        <button class="close-chat-button"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="chat-messages">
+        <!-- Chat messages will be added here dynamically -->
+      </div>
+      <div class="chat-input">
+        <input type="text" placeholder="Type your message...">
+        <button>Send</button>
+      </div>
+    </div>
+
+    <!-- Open Chat Icon -->
+    <div class="open-chat-icon">
+      <i class="fas fa-comment-dots">
+<!--                  <img id="chat-icon" class="chat-icon" src="{{ url_for('static', filename='img/chatbot.png') }}" alt="ChatBot">-->
+      </i>
+    </div>
+
+
+
+        <!-- Add JavaScript for handling chat functionality here -->
+    <script>
+      // Get references to DOM elements
+      const chatWindow = document.querySelector('.chat-window');
+      const closeChatButton = document.querySelector('.close-chat-button');
+      const openChatIcon = document.querySelector('.open-chat-icon');
+      const chatMessages = document.querySelector('.chat-messages');
+      const chatInput = document.querySelector('.chat-input input[type="text"]');
+      const chatButton = document.querySelector('.chat-input button');
+
+      var streamID = {{ streamText }};
+      var sessionID= {{ session }};
+
+      var userMessageFinished = true;
+      startReading();
+
+      // Close chat window when page loads
+      chatWindow.style.display = 'none';
+
+      // Handle user message submission
+      chatButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        const userMessage = chatInput.value;
+        sendChatMessage(userMessage)
+        chatInput.value = '';
+
+      // Add a fake response from the bot
+
+        //setTimeout(() => {
+        //  addChatMessage('Hi there! How can I help you today?', 'bot');
+        //}, 1000);
+      });
+
+        // Handle message input key press
+        chatInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          const userMessage = chatInput.value;
+          sendChatMessage(userMessage);
+          chatInput.value = '';
+        }
+        });
+
+
+
+      // Handle close button click
+      closeChatButton.addEventListener('click', () => {
+      chatWindow.style.display = 'none';
+      openChatIcon.style.display = 'flex';
+      });
+
+      // Handle open chat icon click
+      openChatIcon.addEventListener('click', () => {
+      console.log("SessionID:",sessionID)
+        console.log("streamID:",streamID)
+      chatWindow.style.display = 'block';
+      openChatIcon.style.display = 'none';
+      });
+
+      // Function to add a message to the chat window
+      function addChatMessage(message, sender) {
+        console.log("add chat message")
+        const chatMessage = document.createElement('div');
+        chatMessage.classList.add('chat-message');
+        chatMessage.classList.add(sender);
+        chatMessage.innerHTML = `
+          <p>${message}</p>
+        `;
+        chatMessages.appendChild(chatMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+     }
+      function appendChatMessage(message, sender) {
+        console.log("append chat message")
+        let lastChild = chatMessages.querySelector(`.chat-message.${sender}:last-of-type`);
+
+        if (lastChild) {
+          console.log("Found element:", lastChild);
+          pTag = lastChild.querySelector("p");
+          if (pTag) {
+            pTag.textContent += " "+message; 
+          }
+        } else {
+            console.log("No element found to append message.");
+        }
+     }
+
+     function sendChatMessage(message) {
+        if(userMessageFinished) {
+          addChatMessage(message, 'user');
+        } else{
+          appendChatMessage(message, 'user');          
+        }
+        userMessageFinished = true
+
+        console.log("streamID:",streamID)
+
+        fetch('{{ server }}/'+sessionID+'/'+streamID+'/append', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify({ "seq": message}))
+          })
+
+
+     }
+
+
+						    function startReading() {
+
+
+          //Reading data
+	  console.log("Start reading data from session:"+sessionID)
+    var source = new EventSource("{{ server }}/stream?channel=" + sessionID,{
+  headers: {
+         'Content-Type': 'text/event-stream', // <- Important headers
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+						    'X-Accel-Buffering': 'no'
+						      }
+});
+
+    source.addEventListener('message', function(e) {
+        parseMessage(e)
+
+						    });
+
+
+
+
+
+						    }
+
+
+
+   function parseMessage(e) {
+      console.log("Message:",e.data)
+      const data = JSON.parse(e.data);
+      if(data.sender == "bot:"+streamID && "seq" in data) {
+        console.log("Response:",data)
+        addChatMessage(data.seq, 'bot');
+      }
+      if(data.sender == "asr:0" && "seq" in data && data["seq"] != "") {
+        console.log("Input:",data)
+        if(userMessageFinished) {
+          addChatMessage(data.seq, 'user');
+        } else{
+          appendChatMessage(data.seq, 'user');          
+        }
+        let trimmedStr = data.seq.trim();
+        if (
+            trimmedStr.endsWith(".") || 
+            trimmedStr.endsWith("?") || 
+            trimmedStr.endsWith("!")
+            ) {
+          userMessageFinished = true
+        } else{
+          userMessageFinished = false          
+        }
+      }
+   }
+
+
+    </script>

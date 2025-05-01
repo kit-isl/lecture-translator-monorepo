@@ -1,0 +1,26 @@
+<div class="session-info" id="uploadinfo">
+    Upload short video (~10 seconds)<br><br>
+  <form action="{{ url_for('upload') }}" enctype="multipart/form-data" method="POST">
+    <div class="form-row" id="videoName">
+      <div class="form-column">
+        <label for="videoname">Video Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="videoname" name="videoname" placeholder="Your Video Name">
+      </div>
+    </div>
+    <div class="form-row" id="videoFile">
+      <div class="form-column">
+        <label for="videofile">Video File</label>
+      </div>
+      <div class="form-column">
+        <input type="file" id="videofile" name="videofile" accept="video/*">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <button type="submit">Upload</button>
+      </div>
+    </div>
+  </form>
+</div>

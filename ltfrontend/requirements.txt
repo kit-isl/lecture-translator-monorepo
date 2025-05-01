@@ -1,0 +1,17 @@
+Flask
+requests
+gevent
+gunicorn
+sseclient
+redis
+pytz
+grpcio-tools
+grpcio
+bcrypt
+pdftotext
+flasgger
+scikit-learn
+numpy
+rouge-metric
+nltk
+wikipedia

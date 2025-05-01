@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    {% if chat == True %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+       <div class="logout" id="online_div">
+         <button class="language-button" id="online" style="background-color: red; color: white;">
+         ? live
+           </button>
+       </div>
+
+  <div class="container">
+    <div class="menu" id="menu">
+      <div class="menu-content">
+        <div class="menu-title">Languages</div>
+        <ul>
+        {% for lang in langs %}
+          <li><a id="{{ loop.index }}-button">{{ lang }}</a></li>
+        <!-- <button class="language-button" id="{{ loop.index }}-button">{{ lang }}</button> -->
+        {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="sidebartop">
+      <div class="sidebar-icon">
+        <i class="fas fa-bars"></i>
+      </div>
+      </div>
+    <div class="content">
+
+
+    
+    <h1>{{ name }}</h1>
+
+    {% if recording == True %}
+
+    {% if host == True %}
+       <div class="logout">
+         <button class="language-button" id="logout">
+         End Seminar
+         </button>
+       </div>
+    {% else %}
+       <div class="logout">
+         <button class="language-button" id="leave">
+         Leave Seminar
+       </button>
+       </div>
+    {% endif %}
+
+    {% include 'audio.html' %}
+    {% endif %}
+
+    <div class="windows-container" id="windows-container"></div>
+    <iframe id="turn-setting" src="/runtime-spk-setting" style="position: absolute; background-color: #ffffff00; border-radius: 10px; border: 0px solid #ccc; padding: 0px; display: none; resize: both; width: 600px; height: 350px;"></iframe>
+    </div>
+  </div>
+
+    {% if chat == True %}
+    {% include 'chat.html' %}
+    {% endif %}
+
+<script src="{{ url_for('static', filename='js/eventsource-polyfill.js') }}"></script>
+    <script>
+
+      var speaker = "{{ speaker }}"
+
+      //Mapping from sender to languages
+      var sender = {};  //mapping sender to language
+      var lang_message = {}; 
+      var sender_message = {};
+      var lang_name = {};
+      var lang_index = {};
+      var sender_index = {}
+      var sender_window = {} //current window of the sender
+      var sender_speaker = {}
+      {% for lang in langs %}
+      lang_message["{{ lang }}"] = 0
+      lang_name["{{ loop.index }}"] = "{{ lang }}"
+      lang_index["{{ lang }}"] = "{{ loop.index }}"
+      {% endfor %}
+      const turnSettingWindow = document.getElementById('turn-setting');
+      let highlightedWord = null;
+
+      // Get the add window button and windows container elements
+      const windowsContainer = document.getElementById('windows-container');
+
+      // Add the initial English window
+      addWindow('1');
+
+      // Get the add window button and windows container elements
+      {% for lang in langs %}
+      const add{{ loop.index }}Button = document.getElementById('{{ loop.index }}-button');
+
+      // Handle add window button click
+      add{{ loop.index }}Button.addEventListener('click', () => {
+        var element =  document.getElementById('window-content-{{ loop.index }}');
+        if (typeof(element) == 'undefined' || element == null)
+          {
+              addWindow("{{ loop.index }}");
+          }
+      });
+    {% endfor %}
+
+      // Function to add a window
+      function addWindow(index) {
+        // Create the window element
+        const windowElement = document.createElement('div');
+        windowElement.classList.add('window');
+        windowElement.innerHTML = `
+          <div class="window-header">
+            `+lang_name[index]+`
+            <span class="close-button" onclick="closeWindow(this)">&times;</span>
+          </div>
+          <div class="chat-messages" id="window-content-${index}" style="height: calc(100% - 50px); margin-bottom: 10px"></div>
+        `;
+
+        //if (index == '1') {
+        //  windowElement.innerHTML = windowElement.innerHTML + `
+        //    <iframe id="turn-setting" src="/runtime-spk-setting" style="position: absolute; background-color: #fff; border: 0px solid #ccc; padding: 0px; display: none; resize: both; width: 400px; height: 250px;"></iframe>
+        //  `
+        //}
+
+
+        // Add the window to the windows container
+        windowsContainer.appendChild(windowElement);
+
+        // Update the window content
+        updateWindowContent(parseInt(index));
+
+      }
+
+      // Function to update the window content
+      function updateWindowContent(index) {
+        const content = document.getElementById(`window-content-${index}`);
+        content.innerHTML = ``;
+        loadOldMessages(lang_name[index]);
+      }
+
+      // Function to close a window
+      function closeWindow(closeButton) {
+        closeButton.parentElement.parentElement.remove();
+      }
+
+
+	  {% if recording == True %}
+      {% if host == True %}
+      const logout = document.getElementById('logout');
+      logout.addEventListener('click', () => {
+          sent_end = true;
+          fetch('{{ server }}/{{ session }}/{{ stream }}/append', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify({ "controll": "END"}))
+          })
+
+          setTimeout(function() {
+              window.location.href = "{{ url_for('index') }}"
+          }, 1000);
+      });
+
+      {% else %}
+      const leave = document.getElementById('leave');
+      leave.addEventListener('click', () => {
+          const stopIcon = document.getElementById("stop-icon");
+          if (stopIcon.style.display !== "none") {
+              stopIcon.click();
+              setTimeout(function() {
+                  window.location.href = "{{ url_for('index') }}"
+              }, 2000);
+          } else {
+              window.location.href = "{{ url_for('index') }}"
+          }
+      });
+
+     {% endif %}
+     {% endif %}
+
+
+    //Reading data
+    var source = new EventSource("{{ server }}/stream?channel={{ session }}",{
+      headers: {
+        'Content-Type': 'text/event-stream', // <- Important headers
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      }
+    });
+
+    source.addEventListener('message', function(e) {
+
+      const data = JSON.parse(e.data);
+      //console.log("Got:",data)
+      
+      if(! (data.sender in sender)) {
+        //get langauge of sender
+        const request = new XMLHttpRequest();
+        const stream = data.sender.split(":")[1]
+        request.open('POST', '{{ server }}/{{ session }}/'+stream+'/get_output_language_component', false);  // `false` makes the request synchronous
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        request.send(JSON.stringify(JSON.stringify({ "component": data.sender})));
+        sender[data.sender] = request.responseText
+      }
+
+      if (sender[data.sender] in lang_message && !data.sender.startsWith("textstructurer")) {
+        //there is a window for this language
+        w = document.getElementById(`window-content-`+lang_index[sender[data.sender]])
+        //console.log("Got message "+data.message_id+" from "+data.sender)
+        if (w != null) {
+          //the window is current shown
+
+          if(!(data.sender in sender_message)) {
+            //first message of this sender
+            sender_message[data.sender] = -1;
+            sender_index[data.sender] = Object.keys(sender_index).length
+            sender_window[data.sender] = null;
+
+          }
+          if(parseInt(data["message_id"]) != sender_message[data.sender] + 1) {
+            //First message for this language, but there have been previous languages
+            const request = new XMLHttpRequest();
+            request.open('POST', '{{ server }}/{{ session }}/get_previous_messages', false);  // `false` makes the request synchronous
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.send(JSON.stringify(JSON.stringify({ "component": data.sender,"begin":sender_message[data.sender] + 1,"end":data["message_id"]-1})));
+
+            var messages = JSON.parse(request.responseText)
+            //console.log("Number of previous messages:",messages.length)
+            //console.log("sender 1", sender)
+            messages.forEach(function (item, index) {
+              addMessage(item,sender[data.sender],false)
+
+            });
+          }
+          //console.log("MessageIndex after loading old:",sender_message[data.sender])
+          //console.log("sender 2", sender)
+          //console.log("sender_message", sender_message)
+          if (parseInt(data["message_id"]) == sender_message[data.sender] + 1) {
+              //otherwise message was to fast via loading at API during initalization
+              addMessage(e.data,sender[data.sender],true)
+          }
+        }
+      }
+    }, false);
+
+
+    function addNewTurn(w,data) {
+      child = w.lastChild
+      if (child != null) {
+        unstable = document.getElementById(`unstable-`+sender_index[data.sender])
+        if(unstable != null) {
+          unstable.display="none"
+          try {
+            child.removeChild(unstable)
+          } catch (error) {
+            console.log("Error removing unstable", "unstable-"+sender_index[data.sender])
+          }
+        }
+      }
+      //check if user or bot
+      //console.log("speaker for ",data.sender," is ",sender_speaker[data.sender])
+      //console.log(sender_speaker[data.sender],"{{ speaker }}")
+      if(sender_speaker[data.sender][0] == "{{ speaker }}" ) {
+        addMessageWindow(w,"user",sender_speaker[data.sender][1],data.sender,data.start,data.end)
+      }else{
+        addMessageWindow(w,"bot",sender_speaker[data.sender][1],data.sender,data.start,data.end)        
+      }
+    }
+
+    function addMessageWindow(w, id,name,sender,start,end) {
+      //name = "2562:asr:0:unk"
+      //let speakerName = name.split(":")[-1]
+      //if (speakerName == "unk") {
+      //  speakerName = "undefined"
+      //}
+      const message = document.createElement('div');
+      message.classList.add('meeting-message');
+      message.classList.add(id);
+      message.innerHTML = '<div class="sender '+id+'">'+name.split(":")[3]+"</div><br><p style='word-wrap: break-word; max-width: 100%;'></p>"
+      message.start = start
+      message.end = end
+      message.speakerName = name
+      //console.log("New message:",message)
+      //console.log("New message end time:",message.end)
+      added = false
+      for (const child of w.children) {
+        if(!added && child.start > message.start) {
+          w.insertBefore(message,child)
+          added = true
+        }
+      }
+      if(!added) {
+        w.appendChild(message);
+      }
+      sender_window[sender] = message
+      //console.log("New message:",message)
+      //console.log("New message end time:",message.end)
+      w.scrollTop = w.scrollHeight;
+    }
+
+
+    function addMessage(item,language,showUnstable) {
+      data = JSON.parse(item)
+
+      sender_message[data.sender]=parseInt(data["message_id"])
+      if("speaker" in data) {
+        //console.log("Set speaker for ",data.sender," to ",data.speaker, "data: ", data)
+        sender_speaker[data.sender] = [data.speaker,data.speakerName]
+        //console.log("speaker for ",data.sender," is ",sender_speaker[data.sender])
+
+      }
+
+      if ("seq" in data) {
+        //check for new turn
+        //console.log("Got:",data.seq,"(",data.start,",",data.end,") from",data.sender,)
+        console.log("Got:", data)
+        //console.log("sender",data.sender)
+        console.log("sender_window", sender_window)
+        //console.log("language",sender[data.sender])
+        //console.log("index",lang_index[sender[data.sender]])
+        w = document.getElementById(`window-content-`+lang_index[sender[data.sender]])
+        let add_br = false
+        //if(sender_window[data.sender] == null || data.start - sender_window[data.sender].end > 5 || data.speakerName != sender_window[data.sender].speakerName) {
+        if(sender_window[data.sender] == null || data.speakerName != sender_window[data.sender].speakerName) {
+          addNewTurn(w,data)
+          //console.log("New turn");
+        }else {
+          if (data.start - sender_window[data.sender].end > 2){
+            add_br = true
+          }
+          //console.log("Old window",sender_window[data.sender].end)
+          sender_window[data.sender].end = data.end
+        }
+        //console.log("Current window:",sender_window[data.sender],"end:",sender_window[data.sender].end)
+        w = sender_window[data.sender].getElementsByTagName("p")[0]
+        unstable = document.getElementById(`unstable-`+sender_index[data.sender])
+        if(data.unstable == false) {
+          console.log("Got stable:",data)
+          //console.log("Write to", sender_window[data.sender])
+          //console.log("sender_speaker", sender_speaker)
+          if(unstable != null) {
+            unstable.display="none"
+            w.removeChild(unstable)
+          }
+          //<span class="word" word-order="0">Hello!</span>
+          // w.innerHTML += "<span class='word' word-order='0'>"+data.seq+"</span>"
+          if (data.words != null && data.sender.startsWith("asr")) {
+            const word_stream_id = data.sender.split(":")[1];
+            const word_session_id = data.session;
+            if (add_br) {
+              w.innerHTML += "<br> <br>"
+            }
+            for (var i = 0; i < data.words.length; i++) {
+              w.innerHTML += `<span class='word' word-order='${data.word_id[i]}' word-stream-id='${word_stream_id}' word-session-id='${word_session_id}'>${data.words[i]} </span>`
+            }
+            //handling runtime change speaker name
+            const words = w.querySelectorAll('.word');
+            // const turnSettingWindow = document.getElementById('turn-setting');
+            // let highlightedWord = null;
+
+            words.forEach(word => {
+              
+                word.addEventListener('mouseover', () => {
+                    if (!highlightedWord) {
+                        word.classList.add('highlight');
+                    }
+                });
+
+                word.addEventListener('mouseout', () => {
+                    if (!highlightedWord || highlightedWord !== word) {
+                        word.classList.remove('highlight');
+                    }
+                });
+
+                word.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                    const wordOrder = word.getAttribute('word-order');
+                    const text = word.innerText;
+                    const session_id = word.getAttribute('word-session-id');
+                    const stream_id = word.getAttribute('word-stream-id');
+                    const all_words = Array.from(document.querySelectorAll('.word')).filter(word => {
+                      const wordSessionId = word.getAttribute('word-session-id');
+                      const wordStreamId = word.getAttribute('word-stream-id');
+                      return wordSessionId === session_id && wordStreamId === stream_id;
+                    });
+                    const word_order = Array.from(all_words).map(word => word.getAttribute('word-order'));
+                    const minOrder = Math.min(...word_order);
+                    const maxOrder = Math.max(...word_order);
+                    const all_word_order = [minOrder, maxOrder];
+                    turnSettingWindow.style.display = 'block';
+                    turnSettingWindow.style.top = `${event.clientY}px`;
+                    turnSettingWindow.style.left = `${event.clientX}px`;
+
+                    // Remove highlight from previously highlighted word
+                    if (highlightedWord) {
+                        highlightedWord.classList.remove('highlight');
+                    }
+
+                    highlightedWord = word;
+                    word.classList.add('highlight');
+
+                    // Send message to iframe
+                    turnSettingWindow.contentWindow.postMessage({ text, wordOrder, session_id, stream_id, all_word_order}, '*');
+                });
+            });
+          }else{
+            if (add_br) {
+              w.innerHTML += "<br> <br>" + data.seq
+            }else{
+              w.innerHTML += " " + data.seq
+            }
+          }
+          //w.innerHTML += data.seq
+          document.getElementById(`window-content-`+lang_index[sender[data.sender]]).scrollTop = document.getElementById(`window-content-`+lang_index[sender[data.sender]]).scrollHeight;
+
+        }else if(showUnstable == true) {
+          if(unstable != null) {
+            unstable.display="inline-block"
+            unstable.innerHTML=data.seq
+            w.appendChild(unstable);
+          } else {
+            unstable = document.createElement("div");
+            unstable.display="inline"
+            unstable.style.color = "grey";
+            unstable.id = `unstable-`+sender_index[data.sender]; // Set the ID of the new element
+            unstable.innerHTML=data.seq
+            w.appendChild(unstable);
+          }
+        }
+      }
+      if("num_subscribers" in data) {
+        w = document.getElementById("online")
+        w.innerHTML = data["num_subscribers"] + " live";
+      }
+    }
+
+
+    function loadOldMessages(language) {
+        //First message for this language, but there have been previous languages
+          const request = new XMLHttpRequest();
+    //console.log("Request: {{ server }}/{{ session }}/get_previous_messages")
+        request.open('POST', '{{ server }}/{{ session }}/get_previous_messages', false);  // `false` makes the request synchronous
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        //console.log(language)
+        //console.log(JSON.stringify(JSON.stringify({ "language": language})))
+        request.send(JSON.stringify(JSON.stringify({ "language": language})));
+  //console.log("Response:",request.responseText)
+        var messages = JSON.parse(request.responseText)
+        //console.log("Number of previous messages:",messages.length)
+
+        messages.forEach(function (item, index) {
+          data = JSON.parse(item)
+          //console.log("Sender",data.sender)
+          if(!(data.sender in sender_message)) {
+            //first message of this sender
+            sender_message[data.sender] = -1;
+            sender_index[data.sender] = Object.keys(sender_index).length
+            sender_window[data.sender] = null;
+            sender[data.sender] = language
+          //console.log("Set language",language,sender[data.sender])
+          }
+          addMessage(item,language,false)
+
+        });
+
+
+    }
+
+
+    var menu = document.getElementById('menu');
+
+    var container = document.querySelector('.container');
+    container.addEventListener('mousemove', function(event) {
+      var mouseX = event.clientX;
+
+      if (mouseX <= 250) { // Adjust the width of the sidebar as needed
+        menu.style.left = '20px'; // Move the menu to the visible position
+      } else {
+        menu.style.left = '-300px'; // Move the menu back to its initial position
+      }
+    });
+
+
+    document.addEventListener('click', (event) => {
+      if (!turnSettingWindow.contains(event.target)) {
+        turnSettingWindow.style.display = 'none';  
+          if (highlightedWord) {
+              highlightedWord.classList.remove('highlight');
+              highlightedWord = null;
+          }
+      }
+    });
+    </script>
+  </body>
+</html>

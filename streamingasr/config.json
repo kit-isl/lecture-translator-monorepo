@@ -1,0 +1,12 @@
+{"asr_server_7eu": "http://192.168.0.60:5052/asr/infer/None,None",
+ "asr_server_mult57": "http://192.168.0.60:5008/asr/infer/None,None",
+ "asr_server_en": "http://192.168.0.60:5053/asr/infer/en,en",
+ "asr_server_de": "http://192.168.0.60:5053/asr/infer/de,de",
+ "asr_server_fr": "http://192.168.0.60:5053/asr/infer/fr,fr",
+ "asr_server_es": "http://192.168.0.60:5053/asr/infer/es,es",
+ "asr_server_it": "http://192.168.0.60:5053/asr/infer/it,it",
+ "asr_server_pt": "http://192.168.0.60:5053/asr/infer/pt,pt",
+ "asr_server_nl": "http://192.168.0.60:5053/asr/infer/nl,nl",
+ "SHAS_segmenter": "http://192.168.0.60:5010/segmenter/{}/infer",
+ "asr_server_ja": "http://i13hpc51.iar.kit.edu:8080/asr/ja/infer"
+}

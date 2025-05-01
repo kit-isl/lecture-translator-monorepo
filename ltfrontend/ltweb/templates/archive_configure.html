@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/access.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.min.js"></script>
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+          <h1>{{ name }}</h1>
+
+	  
+
+<div class="session-info" id="accesslecture" width=800px>
+    <div class="window-header"> AI Assistant
+        <div class="buttons-container"> <button class="close2-button" onclick="closeX()"><i class="fas fa-times"></i></button> </div>
+
+    </div>
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="errorCorrection">AI Assistant</label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="aiassistant" name="aiassistant" value="1"
+          {% if aiassistant == 1 %}
+          checked
+          {% endif %}>
+        </div>
+      </div>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-primary" id="saveAIAssistant">Save Changes</button>
+        </div>
+
+</div>
+
+    {%include 'access.html' %}
+    
+
+
+
+
+
+
+
+
+<script>
+
+
+        document.getElementById('saveAIAssistant').addEventListener('click', async () => {
+            const aiassistant = document.getElementById('aiassistant').checked;
+            const dir="{{ dir }}"
+            console.log("Save changes")
+
+            try {
+                const response = await fetch("{{ url_for('archivesession_setAIAssistant') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ dir,aiassistant }),
+                });
+
+                if (response.ok) {
+                    alert('AI assistant updated successfully!');
+                } else {
+                    alert('Failed to update AI assistant.');
+                }
+            } catch (error) {
+                console.error('Error saving access rights:', error);
+                alert('An error occurred while saving access rights.');
+            }
+        });
+
+
+        function closeX() {
+        console.log("Close configuration ")
+
+        window.location.href = "{{ url_for('archive',dir=dir) }}";
+
+
+      }
+
+
+</script>
+
+ 
+    
+  </body>
+
+
+
+</html>
+

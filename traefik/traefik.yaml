@@ -1,0 +1,34 @@
+defaultEntryPoints:
+  - 'http'
+  - 'https'
+
+api:
+  # Port for the status page
+  dashboard: true
+
+entryPoints:
+  http:
+    address: ':80'
+    http:
+      redirections:
+        entrypoint:
+          to: https
+          scheme: https
+  https:
+    address: ':443'
+
+providers:
+  docker:
+    watch: true
+    exposedByDefault: false
+    # match this with the value of $PIPELINE_NAME when not running as `main`
+    constraints: "Label(`pipeline`,`main`)"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: 'dz5035@kit.edu'
+      storage: '/etc/traefik/acme/acme.json'
+      httpChallenge:
+        # used during the challenge
+        entryPoint: 'http'

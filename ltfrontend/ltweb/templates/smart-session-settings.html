@@ -1,0 +1,26 @@
+<div class="session-info" id="smartSession">
+  <form action="{{ url_for('smart_demo') }}" method="POST">
+    <div class="form-row" id="speakerName">
+      <div class="form-column">
+        <label for="speaker"> User create</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="speaker" name="speaker" value="{{user_name}}<{{ user }}>" readonly>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="name" id="meetingName">Demo Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="name" name="name" placeholder="New Demo">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <input type="hidden" value="meeting" name="type" id="type">
+        <button type="submit">Start</button>
+      </div>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,8 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+jsons
+sacremoses
+requests
+llama-index
+llama-index-llms-text-generation-inference
+llama-index-embeddings-huggingface
+huggingface_hub

@@ -1,0 +1,74 @@
+<div class="session-info" id="userinfo">
+    <div class="form-row">
+      <div class="form-column">
+        <label for="videoname">UserID</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="userID" name="videoname" value="{{ user }}" readonly>
+      </div>
+    </div>
+    <div class="form-row" id="username">
+      <div class="form-column">
+        <label for="videofile">Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="user_name" name="user_name" value="{{ user_name }}">
+      </div>
+    </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="video">Audiosample</label>
+        </div>
+        <div class="form-column">
+          <select id="video" name="video">
+            {% for display in videos %}
+            <option value="{{ display }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+    <div class="form-row">
+      <div class="form-column">
+	<button type="button" class="toggle-button" onclick="save_username()">Save</button>
+      </div>
+    </div>
+</div>
+
+
+
+    <script>
+
+        element = document.getElementById("video");
+        element.value = "{{ audio_sample }}";
+
+
+	  		function save_username() {
+		var name = document.getElementById("user_name").value
+        var audio_sample = document.getElementById("video").value
+		const data = { id: "{{ user }}", name: name, "audio_sample": audio_sample };
+		console.log({{ url_for('set_user_name') }});
+		fetch({{ url_for('set_user_name') }}, {
+		method: 'POST',
+		headers: {
+		'Accept': 'application/json',
+		'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(data),
+		}).then((response) => response.json())
+        .then((data) => {
+            console.log('response:', data);
+
+            document.getElementById("user_name").value = data.name
+            speaker = document.getElementById("speaker")
+            if(speaker){
+                speaker.value = data.name.concat("<{{ user }}>")
+            }
+
+            document.getElementById("video").value = data.audio_sample
+		});
+
+		
+		}
+
+	        </script>

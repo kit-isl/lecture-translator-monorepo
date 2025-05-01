@@ -1,0 +1,17 @@
+{
+  "asr_server_en": "http://whisper-worker:5000/asr/infer/en,en",
+  "asr_server_de": "http://whisper-worker:5000/asr/infer/de,de",
+  "asr_server_fr": "http://whisper-worker:5000/asr/infer/fr,fr",
+  "asr_server_es": "http://whisper-worker:5000/asr/infer/es,es",
+  "asr_server_nl": "http://whisper-worker:5000/asr/infer/nl,nl",
+  "asr_server_pt": "http://whisper-worker:5000/asr/infer/pt,pt",
+  "asr_server_it": "http://whisper-worker:5000/asr/infer/it,it",
+  "asr_server_mult57": "http://whisper-worker:5000/asr/infer/None,None",
+  "asr_server_mult57,en": "http://whisper-worker:5000/asr/infer/None,en",
+  "asr_server_de,en": "http://whisper-worker:5000/asr/infer/de,en",
+  "asr_server_fr,en": "http://whisper-worker:5000/asr/infer/fr,en",
+  "asr_server_es,en": "http://whisper-worker:5000/asr/infer/es,en",
+  "asr_server_nl,en": "http://whisper-worker:5000/asr/infer/nl,en",
+  "asr_server_pt,en": "http://whisper-worker:5000/asr/infer/pt,en",
+  "asr_server_it,en": "http://whisper-worker:5000/asr/infer/it,en"
+}

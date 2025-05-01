@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="'en">
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/structure.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.css">
+    {% if chat == True %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    {% endif %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/confirmMessage.css') }}">
+
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% set mode = "archive" %}
+{% include header %}
+
+<div id="DeleteDialog" class="modal">
+  <div class="modal-content">
+    <p>Are you sure you want to delete the recording <span id="FileToDelete"></span> ? This can't be undone.</p>
+    <div class="modal-actions">
+      <button id="confirmBtnDelete" class="language-button">Delete</button>
+      <button id="cancelBtnDelete" class="language-button">Cancel</button>
+    </div>
+</div>
+</div>
+
+
+
+        {% if w_access %}
+  <div class="container">
+<div class="menu" id="menu">
+      <div class="menu-content">
+        <div class="menu-title">Settings</div>
+        <ul>
+          <li><a href="{{ url_for('archive_configure',dir=dir) }}">Configure</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sidebartop">
+      <div class="sidebar-icon">
+        <i class="fas fa-bars"></i>
+      </div>
+      </div>
+
+        {% endif %}
+
+    {% if chat == True %}
+    {% include 'chat.html' %}
+    {% endif %}
+
+          <h1>{{ name }}</h1>
+
+	  <div class="sessions">
+	  <input type="text" id="searchbar" onkeyup="filter()" placeholder="Search ...">
+	  </div>
+	  
+    <div class="sessions">
+          {% for d,type,link,meta,icon,access in children %}
+      <div class="archivesession">
+        <div class="window-header">{{ d }}
+
+          {%if access  == "write" and type == "session" %}
+          <div class="dropdown" id="config-dropdown">
+            <!-- Settings Button -->
+            <button class="dropdown-button" id="config-dropdown-button">
+              <i class="fas fa-chevron-down"></i>
+            </button>
+        
+        
+            <!-- Dropdown Content -->
+            <div class="dropdown-content" id="config-dropdown-content">
+              <button id="configure" onclick="location.href='{{ url_for('archivesession_configure',dir=link) }}';" aria-label="Configure session"
+                title="Configure session">
+                <i class="fas fa-cog"></i>
+              </button>
+              <button id="Delete" onclick="delete_archive_recording('{{ link }}',false)" aria-label="Delete session"
+                title="Delete session">
+                <i class="fas fa-trash"></i>
+                </button>
+                <!-- <button id="Move" onclick="move({{ link }})" aria-label="Move session"
+                title="Move session">
+                <i class="fas fa-cut"></i>
+                </button> -->
+            </div>
+          </div>
+
+          {% endif %}
+        
+
+
+        </div>
+        {% if type == "dir" %}
+	{% if d == " Back" %}
+        <a href="{{ url_for('archive', dir=link) }}"><img src="{{ url_for('static', filename='img/back.svg') }}" class="logo" alt="Back"></a>
+	{% else %}
+        <a href="{{ url_for('archive', dir=link) }}"><img src="{{ url_for('static', filename='img/archive.png') }}" class="logo" alt="Enter directory"></a>
+	{% endif %}
+	{% elif type == "upload" %}
+          <span class="logo" id="upload-lecture-video"><img src="{{ url_for('static', filename='img/upload-share.svg') }}" class="logo" alt="Upload video"></span>
+  {% elif type == "record" %}
+          <span class="logo" id="record-lecture-video"><img src="{{ url_for('static', filename='img/presenter.svg') }}" class="logo" alt="Record video"></span>
+	{% elif type == "createdir" %}
+          <span class="logo" id="create-dir"><img src="{{ url_for('static', filename='img/create-new-folder.svg') }}" class="logo" alt="Create directory"></span>
+        {% else %}
+        <a href="{{ url_for('archivesession', dir=link) }}"><img
+							      {% if icon == True %}
+							      src="{{ url_for('thumb', dir=link)}}"
+							      {% else %}
+							      src="https://cdn-icons-png.flaticon.com/512/86/86076.png?w=1060&t=st=1683277610~exp=1683278210~hmac=89e9335d7b76a6ed0650c796e9e08059bee37f22e101c8e543380f8387e36fc3"
+							      {% endif  %}
+							      {% if 'title' in meta %}
+							      class="thumb"
+							      {% else %}
+							      class="logo"
+							      {% endif %}
+							      alt="View session"></a>
+
+	{% if 'title' in meta %}
+	<div class="session_title"> {{ meta["title"] }} </div>
+	{% endif %}
+	{% if 'presenter' in meta %}
+	<div class="session_presenter"> {{ meta["presenter"] }} </div>
+	{% endif %}
+	{% if 'event' in meta %}
+	<div class="session_event"> {{ meta["event"] }} </div>
+        {% endif %}
+	{% endif %}
+      </div>
+    {% endfor %}
+
+
+</div>
+
+      {% include 'lecture-session-settings.html' %}
+      {% include 'upload-lecture-settings.html' %}
+      {% include 'create-dir-settings.html' %}
+
+      {% include 'sessionWindow.html' %}
+
+    <script type="text/javascript">
+
+      const uploadLectureVideoButton = document.getElementById('upload-lecture-video');
+      const recordLectureVideoButton = document.getElementById('record-lecture-video');
+      const createdirButton = document.getElementById('create-dir');
+
+      uploadlectureinfo.style.display = "none"
+      lectureSession.style.display = "none"
+      createdirinfo.style.display = "none"
+
+      if(uploadLectureVideoButton) {
+      uploadLectureVideoButton.addEventListener('click', () => {
+      uploadlectureinfo.style.display = "block";
+      createdirinfo.style.display = "none";
+      lectureSession.style.display = "none";
+      const path = uploadlectureinfo.querySelector('#path');
+      path.value="{{ directory }}"
+      uploadlectureinfo.scrollIntoView();
+      });
+      }
+
+      if(recordLectureVideoButton) {
+      recordLectureVideoButton.addEventListener('click', () => {
+      lectureSession.style.display = "block";
+      uploadlectureinfo.style.display = "none";
+      createdirinfo.style.display = "none";
+      const path = lectureSession.querySelector('#path');
+      path.value="{{ directory }}"
+      lectureSession.scrollIntoView();
+      });
+      }
+
+      if(createdirButton) {
+      createdirButton.addEventListener('click', () => {
+      createdirinfo.style.display = "block";
+      uploadlectureinfo.style.display = "none";
+      lectureSession.style.display = "none";
+      newdirpath.value="{{ directory }}"
+      createdirinfo.scrollIntoView();
+      });
+      }
+
+
+      function delete_archive_recording(file, reloadInsteadOfRedirect=false) {
+      const dialog = document.getElementById('DeleteDialog');
+      const name = document.getElementById('FileToDelete');
+      name.innerHTML = decodeURIComponent(file);
+      dialog.style.display = 'block';
+
+      const confirmBtn = document.getElementById('confirmBtnDelete');
+      confirmBtn.onclick = function() {
+
+        window.location.href = reloadInsteadOfRedirect ? window.location.href : "{{ url_for('delete_recording', dir='') }}" + file;
+      }
+      const cancelBtn = document.getElementById('cancelBtnDelete');
+      cancelBtn.onclick = function() {
+          dialog.style.display = 'none';
+      }
+    }
+
+
+
+      function filter() {
+
+  // Declare variables
+  var input, filter, ul, li, a, i, txtValue;
+  input = document.getElementById('searchbar');
+  filter = input.value.toUpperCase();
+  li = document.getElementsByClassName('archivesession');
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < li.length; i++) {
+		  txtValue = li[i].textContent;
+    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+      li[i].style.display = "";
+    } else {
+      li[i].style.display = "none";
+    }
+  };
+
+
+
+      };
+
+
+
+        {% if w_access %}
+
+                      var menu = document.getElementById('menu');
+
+    var container = document.querySelector('.container');
+    container.addEventListener('mousemove', function (event) {
+      var mouseX = event.clientX;
+      var mouseY = event.clientY;
+
+      if (menu.style.left == "20px") { //current menu is shown
+        if (mouseX > 250) {
+          menu.style.left = '-300px'; // Move the menu back to its initial position
+        }
+      } else { //current menu is not shown
+        if (mouseX < 80 && mouseY > 130 && mouseY < 170) {
+          menu.style.left = '20px'; // Move the menu to the visible position
+        }
+      }
+    });
+
+
+        {% endif %}
+
+
+      </script>
+ 
+    
+  </body>
+
+
+
+</html>
+

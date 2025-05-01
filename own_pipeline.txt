@@ -1,0 +1,32 @@
+
+# Server (logged in as a user with docker rights)
+
+pipeline_name=facedubbing2 # use unused Name (without special characters)
+port=11000 # use unused port
+# tests whether docker compose v2 is installed
+docker compose version && dockercmd="docker compose" || dockercmd="docker-compose"
+
+git clone --recursive https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/ltpipeline.git ltpipeline-dev-$pipeline_name
+cd ltpipeline-dev-$pipeline_name
+git submodule foreach 'git checkout main || true' && git submodule foreach 'git checkout master || true'
+cd ltfrontend/ltweb/templates/themes/kittheme && git reset HEAD . && git checkout . && cd -
+cd ltfrontend/ltweb/static/themes/kittheme && git reset HEAD . && git checkout . && cd -
+echo DOMAIN=localhost > .env && echo FRONTEND_THEME=kittheme >> .env && echo HTTPS_PORT=$port >> .env && echo HTTP_PORT=$(($port+1)) >> .env && echo REDIS_PORT=$(($port+2)) >> .env && echo MEDIATOR_PORT=$(($port+3)) >> .env && echo PIPELINE_NAME=$pipeline_name >> .env
+sed -i "s/main/$pipeline_name/g" traefik/traefik.yaml
+echo "mtasr:$apr1$zn.YuhX4$mtlflwlwB4UubFAxwSsF40" > traefik/auth/basicauth.txt
+cd examples/KIT.2024.02.Dialog
+sed -i "s/docker compose/$dockercmd/g" run_pipeline.sh
+sed -i 's#docker-compose.dialog.yaml#docker-compose.dialog.yaml -f $ROOT_DIR/docker-compose.noauth.yaml -f $ROOT_DIR/docker-compose.notls.yaml -f $ROOT_DIR/docker-compose.dev.yaml#g' run_pipeline.sh
+bash run_pipeline.sh build
+bash run_pipeline.sh up -d
+cd -
+sleep 10
+$dockercmd exec streamingasr bash -c 'curl -H "Content-Type: application/json" http://ltapi:5000/ltapi/register_worker -d "{\"component\": \"asr\", \"name\": \"mult57\", \"server\": \"http://192.168.0.60:5008/asr\"}"'
+$dockercmd exec streamingasr bash -c 'curl -H "Content-Type: application/json" http://ltapi:5000/ltapi/register_worker -d "{\"component\": \"mt\", \"name\": \"mult16\", \"server\": \"http://192.168.0.64:5051\"}"'
+
+# Laptop
+ssh -N -L 8090:i13hpc72:$port $user@i13hpc1.isl.iar.kit.edu
+
+# Browser
+http://localhost:8090
+

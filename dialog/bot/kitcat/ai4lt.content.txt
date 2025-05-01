@@ -1,0 +1,115 @@
+Welcome to the AI4LT
+The "Artificial Intelligence for Language Technologies (AI4LT)" lab at the Institute for Anthropomatics und Robotics (IAR) develops language technologies that enable human-computer interaction and support human-human interaction using deep learning. The lab investigates the research areas: machine translation, speech translation, automatic speech recognition and dialog modelling. The lab is headed by Prof. Dr. Jan Niehues.
+News
+
+The "AI for Language Technologies" was found on 01.03.2022. We are looking foward to exciting reseearch and teaching at KIT.
+
+Lab Homepage website for general information: https://ai4lt.iar.kit.edu/english/
+
+Jan Niehues
+Jan Niehues is a professor at the Karlsruhe Institute of Technology leading the “AI for Language Technologies” group. He received his doctoral degree from Karlsruhe Institute of Technology in 2014 on the topic of “Domain Adaptation in Machine Translation”. He has conducted research at Carnegie Mellon University, LIMSI/CNRS and Maastricht University. His research has covered different aspects of machine translation and spoken language translation. He has been involved in several international projects on spoken language translation, e.g. the German-French Project Quaero, the EU H2020 project QT21, EU-Bridge and ELITR. Currently, he is one of the organizers of the International Conference on Spoken Language Translation (IWSLT).
+
+More information on Jan Niehues in website: https://ai4lt.iar.kit.edu/21_92.php
+
+Research at AI4LT
+We are using natural language processing technology in our daily life. This include tools to perform machine translation of text and speech, when we are traveling. Or we are using digital assitants to control our enviroment.
+At AI4LT we develop new methods to extend the usability of these tools and help humans to more easy perform their task with the help of digital tools.
+
+More information on research at AI4LT is in the website: https://ai4lt.iar.kit.edu/26.php
+
+AI4LT Team Members:
+
+Name	Function	Phone	E-Mail
+Niehues, Jan	Head AI4LT	+49 721 608-46384	jan niehues∂kit edu
+Dannenmaier, Silke	 	+49 721 608-44730	silke dannenmaier∂kit edu
+Dinh, Tu Anh	Research Scientist	 	tu dinh∂kit edu
+Hilgert, Lukas	Research Scientist	 	lukas hilgert∂kit edu
+Koneru, Sai	Research Scientist	 	sai koneru@kit edu∂kit edu
+Li, Zhaolin	Research Scientist	 	zhaolin li∂kit edu
+Liu, Danni	Research Scientist	 	danni liu∂kit edu
+Sinhamahapatra, Supriti	Research Scientist	 	supriti sinhamahapatra∂kit edu
+Züfle, Maike	Research Scientist	 	maike zuefle∂kit edu
+
+More information about AI4LT Team Members on website: https://ai4lt.iar.kit.edu/21.php
+
+AI4LT Lectures:
+
+Title	Type	Semester	Place
+Verarbeitung Natürlicher Sprache	Vorlesung (V)	WS 24/25
+Praktikum Sprachübersetzung	Praktikum (P)	WS 24/25
+Advanced Topics in Machine Translation	Seminar (S)	WS 24/25
+Proseminar Verarbeitung Natürlicher Sprache	Proseminar (PS)	WS 24/25
+Deep Learning and Neural Networks	Lecture (V)	SS 2024
+Advanced Artificial Intelligence	Lecture (V)	SS 2024
+Seminar Sprach-zu-Sprach-Übersetzung	Seminar (S)	SS 2024
+Advanced Topics in Machine Translation	Seminar (S)	SS 2024
+Natürlichsprachliche Dialogmodellierung	Praktikum (P)	SS 2024
+Proseminar Verarbeitung Natürlicher Sprache	Proseminar (PS)	SS 2024
+
+To check available thesis, please go to Thesis topics website https://ai4lt.iar.kit.edu/74.php where all bachler/master thesis topics are listed.
+More Information can be found on the Lab website: https://ai4lt.iar.kit.edu/english
+
+AI4LT NEWS:
+
+Paper on ASR Disfluency Detection at SLT 2024
+Excited to announce that our paper, "Augmenting ASR Models with Disfluency Detection" has been accepted at SLT 2024! Disfluencies, such as fillers, repetitions, and stutters, are common in spoken language but often overlooked by Automatic Speech Recognition (ASR) models. Accurate disfluency detection is crucial for applications like speech disorder diagnosis. Our research introduces an inference-only method to enhance ASR models by incorporating disfluency detection. This work is a collaborative effort with the SARAI Lab. Congrats to all authors involved!
+
+Paper on Quality Estimation at EAMT 2024
+In the EAMT conference in June 2024, we are presenting a paper on quality estimation, the task of predicting the quality of machine translation system output, without using any gold-standard references.
+In machine translation, measuring the performance of model-specific quality estimation models is not straightforward. In response, we propose an unsupervised approach called kNN-QE, which extracts information from the training data using k-nearest neighbors.
+
+2 papers at NAACL on LLMs for machine translation post-editing and zero-shot summarization
+In the NAACL conference in June 2024, our group is presenting two papers. One is on using LLMs for post-editing machine translation outputs. This work results from our collaboration with SAP. The other paper is on improving multilingual pretrained models for zero-shot summarization. This is based on the thesis project of our alumnus Vladimir. Congrats to all authors!
+
+3 papers at LREC-COLING
+Looking forward to presenting 3 papers in the LREC-COLING conference in May 2024! At the main conference, we have one paper on speech recognition for endangered languages, and another paper on evaluation of speech translation performance. We are also proud that our thesis alumnus Ari is presenting his work on creating low-resource translation corpora in the SIGUL workshop.
+
+2 papers at EACL on multilingual transfer & diffusion models
+In the EACL conference in March 2024, we are excited to present our paper on multilingual transfer for attribute-controlled translation. This work aims to customize pretrained massively multilingual translation models for attribute-controlled translation without relying on supervised data.
+We are also proud that our thesis alumnus Yunus is presenting his work on diffusion models for machine translation at the student research workshop.
+
+Invited Talk by Dr. Gerasimos Spanakis
+Dr. Gerasimos (Jerry) Spanakis from Maastricht University's Law+Tech Lab will give an invited talk on "Find and free the law: How NLP can help access to legal resources". The talk will take place on 26 January from 2:00 to 3:00 in Bldg. 50.28, Seminar Room 1. You are all welcome to join!
+
+EMNLP 2023 Demo Paper on Simultaneous Speech Translation
+In the EMNLP conference in December 2023, we are excited to present our joint work with the Interactive Systems Lab on low-latency simultaneous speech translation! The work describes approaches to evaluate low-latency speech translation systems under realistic conditions, for instance our KIT Lecture Translator. See our paper for details!
+
+Paper in Machine Translation Summit: Perturbation-Based Quality Estimation
+Quality estimation is the task of predicting the quality of machine translation outputs without relying on any gold translation references. We propose an explainable, unsupervised word-level quality estimation method for blackbox machine translation. It can evaluate any type of blackbox MT systems, including the currently prominent large language models (LLMs) with opaque internal processes. See the paper (link) for details!
+
+WMT Publication: Can we learn an artificial language?
+The cornerstone of multilingual neural translation is shared representations across languages. In this work, we discretize the encoder output latent space of multilingual models by assigning encoder states to entries in a codebook, which in effect represents source sentences in a new artificial language (Link). Join the presentation on Wednesday, 07.12.2022 at 14:20 GST (11:20 CET) at the Seventh Conference on Machine Translation (WMT 2022).
+
+NeurIPS workshop paper: Efficient Speech Translation with Pre-trained Models
+Pre-trained models are a promising approach to efficiently build speech translation models for many different tasks. Zhaolin Li showed how this models can be used using limited data and computation resources (Link). Join his presentation on Friday, 02.12.2022 between 7:30pm - 8:30pm CET at the Workshop Second Workshop on Efficient Natural Language and Speech Processing (ENLSP-II).
+AI4LT
+
+All publications of AI4LT are updated at this website: https://ai4lt.iar.kit.edu/79.php
+
+PROJECTS going on at AI4LT:
+
+1. RealWorldLab robotics AI
+At the KIT RealWorldLab robotics AI, humanoid robots as embodied artificial intelligence (AI) meet their potential future users. Humanoid robots at various locations in public space - from daycare centers and schools to museums, public libraries, and hospitals - are to make artificial intelligence tangible for humans. In diverse experiments, both a broad sensitization for AI technology is to be achieved and new insights for the research and development of future AI robots are to be gained.
+Here, society and science come together at eye level. Through a bidirectional exchange of knowledge and experience between society and science, insights are to be gained to develop robotic AI systems that people need and want. Therefore, concrete applications of robotic AI in practice are developed with civil society actors and their opportunities, but also their risks are explored, with the goal of making the potentials of robotic AI directly tangible and graspable for our society but also demystifying them.
+
+2. Meetween
+Meetween is a project funded by the European Commission, designed to enhance communication between individuals by offering a "Personal AI Mediator for Virtual MEETings BetWEEN People." In essence, Meetween aims to simplify and enrich interactions on video conferencing platforms, promoting seamless, engaging, and barrier-free collaboration across different languages.
+The project leverages AI-based technology, with a particular focus on multimodal AI foundation models. This technology enables not only speech-to-speech translation but also the incorporation of the participants' contexts, including their regional and cultural backgrounds, particularly linguistic aspects.
+Furthermore, Meetween prioritizes safety, privacy, and ethical considerations, aligning with the European vision for responsible AI.
+More information can be found on the project homepage: https://www.meetween.eu
+
+3. Learning from and with Pretrained Models
+Recently, pre-trained models became an essential part of deep learning-based AI systems as e.g. shown by our successful integration into speech translation systems. The availability of many such models enables new ways of learning: Instead of learning directly from data, task-specific systems can be trained from pretrained models.
+In this project, we will investigate how we can push the state-of-the-art with these new resources. Therefore, we need to investigate different research questions that are essential for efficient learning from these models. How can we efficiently combine complementary strength and abilities (e.g. different modalities) of the models? We will epically focus on sharing and aligning representations between the models. How can we add abilities to existing models and what are important properties of the models? Thereby, we will investigate self-supervised learning as well as supervised tasks. A focus on the application of the models will be on research data and the integration of outcomes from the project “Embeddings in Hyperbolic and Weighted Spaces and Applications in Natural Language Processing”
+
+4. Computational Language Documentation by 2025 (CLD 2025)
+There are approximately 7000 languages spoken today, but around two-thirds of them count less than 1000 speakers and are at risk of disappearing. For linguistics, manual documenting the endangered languages is labour-intensive and difficult to perform with the required level of consistency. Language technologies with deep learning techniques have shown the potential to aid in time-consuming and hard tasks. Still, the technologies are little-used in language documentation, and there are few case studies demonstrating practical usefulness in low-resource settings. Therefore, the CLD2025 project aims to implement language technologies by developing a co-construction of models and tools by field linguists and computational linguists, and the development of interfaces and systems that allow real use by field linguists.
+In this project, we focus mostly on techniques for automatic speech transcription. We will work on time alignment technique to involve timing information in audio recordings and transcriptions. Besides, with the pronunciation dictionaries and variants from our partners, we will focus on phoneset discovery and phone recognition. In addition, we will investigate leveraging tone information in speech transcription. Specifically, we propose to design tone models for two language documentation tasks: unsupervised word segmentation and phonemic and tonal transcription. For endangered languages, acquiring sufficient data resources is difficult and sometimes impossible. Therefore, we aim to develop and improve the above techniques in low-resource scenarios.
+
+5. Kontext MT
+Although existing Machine Translation systems have achieved impressive performance on many language pairs, several challenges are yet to be solved. Domain-mismatch for training and test data, limited amounts of labelled in-domain data, specialised terminology, translating conversational content are few examples of open problems in the current MT research. In the SAP-KIT “Kontext-MT” project, we aim to solve some of the problems described above to improve software localisation for SAP products.
+The core idea of the project is to use additional contextual information for improving the Neural MT (NMT) models. Majority of the current MT systems rely on only the source sentence to generate a target translation. However, such systems ignore information that is necessary in producing the accurate translation. For example, consider the word “driver” as the user-interface text we need to translate for a taxi and software application (app). In the taxi app, we should translate the text so that it means somebody who is driving the vehicle. In the software app, it should be translated to software drivers and not as mentioned before. However, we cannot know exactly how to translate with the source sentence alone and need additional context.
+Furthermore, we will focus on using also other sources of contextual informations to improve the overall quality. We need to maintain consistency (same translation for source sentences that mean the same thing), translate in-domain special terms (use information dictionary/ additional resources) and follow the length restrictions (Use screenshots so that generated translation does not exceed the text box length but also of high-quality). Therefore, we hope to improve the current MT systems using context described above and enable high quality translations for SAP products.
+
+More information about projects happening at AI4LT on the website: https://ai4lt.iar.kit.edu/projects.php
+

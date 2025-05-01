@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>KIT Lecture Translator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kit.css') }}">
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+<h1>Breaking down language and comprehension barriers – efficient ways of interaction</h1>
+    
+    <p><em>Automatic speech recognition and translation bring spoken lectures and discussions closer to an international audience. New AI models structure conversations, lectures and videos, so that users can interact with the system and navigate through videos and text more efficiently. All of this is combined in one system: The Lecture Translator.</em></p>
+    
+    <h2>The Lecture Translator offers:</h2>
+    <ul>
+        <li>Automatic recognition of the language of a spoken word</li>
+        <li>Automatic translation in 18 languages</li>
+        <li>Smart Chaptering: text segmentation, paragraphing and chapter heading and key points</li>
+        <li>Summarization</li>
+        <li>Auto-links: automatic display of links as cross-references to relevant sources in lecture notes or Wikipedia</li>
+        <li>New ways to interact with the system</li>
+        <li>Specific applications for content creators, students, teachers and podcasters</li>
+    </ul>
+    
+    <h2><em>Ease and speed up work and learning:</em></h2>
+    <p><em>automatic transcription – automatic translation in 18 languages – automatic chaptering – automatic heading – automatic key points</em></p>
+    <p><em>automatic summarization – automatic links – automatic post processing – automatic archiving – new Question-Answering</em></p>
+    
+    <h2>More than 30 years of experience</h2>
+    <p>First service for students at a University: Since 2012, Karlsruhe Institute of Technology (KIT) has installed the <em>Lecture Translator</em> to translate lectures for foreign students. Lectures at KIT are mainly presented in German, a problem for many students from other countries that was first addressed by the scientific team of Professor Alex Waibel several years ago. Already in 2005, the team made its first attempt with a system that simultaneously translated lectures into French, English, or Spanish.</p>
+    
+    <p>Prof. Alex Waibel works on automatic speech recognition and translation for more than 30 years. Today the constant advances of the Lecture Translator are jointly developed by Prof. Alex Waibel and Prof. Jan Niehues.</p>
+
+  </body>
+</html>

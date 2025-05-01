@@ -1,0 +1,7 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+jsons
+redis
+numpy
+httpx
+requests
+pysbd

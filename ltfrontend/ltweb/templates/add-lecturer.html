@@ -1,0 +1,30 @@
+<div class="session-info" id="addlecturerinfo">
+    Add lecturer (firstname.lastname@kit.edu for KIT-Mails)<br><br>
+  <form action="{{ url_for('add_lecturer') }}" enctype="multipart/form-data" method="POST">
+    <div class="form-row" id="emailAdress">
+      <div class="form-column">
+        <label for="emailadress">Email address</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="emailadress" name="emailadress" placeholder="Email address">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="group">Group</label>
+      </div>
+      <div class="form-column">
+        <select id="group" name="group">
+          <option value="presenter">Presenter</option>
+          <option value="admin">Admin</option>
+          <option value="collector">Collector</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <button type="submit">Add</button>
+      </div>
+    </div>
+  </form>
+</div>

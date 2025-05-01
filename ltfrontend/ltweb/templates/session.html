@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  {% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+  {% include title %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/structure.css') }}">
+  {% if chat == True %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+  {% endif %}
+  {% if errorCorrectionTools != False %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/errorCorrectionTools.css') }}">
+  {% endif %}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/confirmMessage.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+  <script src="/static/js/hls.min.js"></script>
+
+</head>
+
+<body>
+
+  {% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+  {% set mode = "live" %}
+  {% include header %}
+
+  <div class="logout" id="online_div">
+    <button class="language-button" id="online" style="background-color: red; color: white;">
+      ? live
+    </button>
+  </div>
+
+  <div class="container">
+    <div class="menu" id="menu">
+      <div class="menu-content">
+        <div class="menu-title">Languages</div>
+        <ul>
+          {% for lang in langs %}
+          {% if "Audio" not in lang and "Correction" not in lang %}
+          <li><a id="{{ loop.index }}-button">{{ lang }}</a></li>
+          {% endif %}
+          <!-- <button class="language-button" id="{{ loop.index }}-button">{{ lang }}</button> -->
+          {% endfor %}
+          {% if memory == True %}
+          <li><a id="memory-button">Context biasing</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="sidebartop">
+      <div class="sidebar-icon">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+    <div class="content">
+
+
+
+
+      <h1>{{ name }}</h1>
+
+      {% if host == False %}     
+
+      <div id="LanguageSelectionDialog" class="modal">
+        <div class="modal-content">
+            <p>Select your langauges:</p>
+            <div class="modal-actions">
+              {% for lang in langs %}
+              {% if "Audio" not in lang and "Correction" not in lang %}
+              <button id="{{ loop.index }}-selection" class="selection-button">{{ lang }}</button>
+              {% endif %}
+              {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+    {% if host == True %}     
+      <div class="logout" id="logout">
+        <button class="language-button" id="login">
+          End {{ type }}
+        </button>
+      </div>
+      <div class="logout" id="clear" style="top: 200px">
+        <button class="language-button" id="clear">
+          Clear Output
+        </button>
+      </div>
+
+    <div id="EndLectureDialog" class="modal">
+        <div class="modal-content">
+            <p id="end-lecture-dialog-text">Are you sure you want to end this session? This can't be undone.</p>
+            <label
+                {% if log == False %}
+                hidden
+                {% endif %}
+                >
+                <input type="checkbox" id="confirmCheckbox"> Save the content of this session
+            </label>
+            <div class="modal-actions">
+                <button id="confirmBtnEndLecture" class="language-button">Confirm</button>
+                <button id="cancelBtnEndLecture" class="language-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="ClearDialog" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to clear the output of this session for all connected users? This can't be undone.</p>
+            <div class="modal-actions">
+                <button id="confirmBtnClear" class="language-button">Confirm</button>
+                <button id="cancelBtnClear" class="language-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+      {% endif %}
+
+      {% if recording == True %}
+      {% include 'audio.html' %}
+      {% endif %}
+
+      {% if errorCorrectionTools != False %}
+      {% include 'errorCorrectionTools.html' %}
+      {% include 'selectionTool.html' %}
+      {% endif %}
+
+<!--    <div class="language-selection"> -->
+        <div class="windows-container" id="audio-windows-container"></div>
+        <div class="windows-container" id="windows-container"></div>
+        {% if saasr == True %}
+        <iframe id="turn-setting" src="/runtime-spk-setting" style="position: fixed; background-color: #ffffff00; border-radius: 10px; border: 0px solid #ccc; padding: 0px; display: none; resize: both; width: 600px; height: 350px;"></iframe>
+        {% endif %}
+<!--    </div> -->
+      {% if show_url == True %}
+      <div class="windows-container" id="qrContainer">
+        <div id="qrCode">
+            <!-- QR code image -->
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ permanent_link }}" alt="QR Code">
+        </div>
+        <button id="copyButton" class="language-button">Copy QR Code to Clipboard</button>
+        <button id="copyButton2" class="language-button">Copy URL Code to Clipboard</button>
+      </div>
+      {% endif %}
+
+
+    </div>
+  </div>
+
+
+  {% if chat == True %}
+  {% include 'chat.html' %}
+  {% endif %}
+
+<script src="{{ url_for('static', filename='js/eventsource-polyfill.js') }}"></script>
+
+  {% include 'sessionWindow.html' %}
+
+  <script>
+    {% if show_url == True %}
+    document.getElementById('copyButton').addEventListener('click', async () => {
+        try {
+            // Get the image element
+            const img = document.querySelector('#qrCode img');
+            
+            // Fetch the image as a blob
+            const response = await fetch(img.src);
+            const blob = await response.blob();
+            
+            // Create a clipboard item with the image
+            const item = new ClipboardItem({ 'image/png': blob });
+            
+            // Copy the image to the clipboard
+            await navigator.clipboard.write([item]);
+        } catch (error) {
+            console.error('Failed to copy QR code:', error);
+            alert('Failed to copy QR code. Please try again.');
+        }
+    });
+
+    document.getElementById('copyButton2').addEventListener('click', function() {
+        // Get the current page URL
+        const url = "{{ permanent_link }}";
+
+        try {
+            navigator.clipboard.writeText(url);
+        } catch (error) {
+            console.error('Failed to copy URL:', error);
+            alert('Failed to copy URL. Please try again.');
+        }
+    });
+    {% endif %}
+
+    {% if correction_mode_deactivated == True %}
+        document.getElementById("online").setAttribute("hidden", "hidden");
+    {% endif %}
+
+    {% if host == False %}  
+    const lsdialog = document.getElementById('LanguageSelectionDialog');
+    lsdialog.style.display = 'block';
+    {% endif %}
+
+
+      function bindObjectToDataset(el, key) {
+        const obj = JSON.parse(el.dataset[key] || '{}');
+        return new Proxy(obj, {
+          set(target, prop, value) {
+            target[prop] = value;
+            el.dataset[key] = JSON.stringify(target);
+            return true;
+          }
+        });
+      }
+
+      const sender = bindObjectToDataset(document.body, 'sender');
+    
+
+    // Mapping from sender to languages
+    let lang_message = bindObjectToDataset(document.body, 'langMessage');
+    let sender_ids = bindObjectToDataset(document.body, 'senderIds');
+    let sender_number = bindObjectToDataset(document.body, 'senderNumber');
+    let lang_name = bindObjectToDataset(document.body, 'langName');
+    let lang_index = bindObjectToDataset(document.body, 'langIndex');
+    let lang_visible = bindObjectToDataset(document.body, 'langVisible');
+    
+    let highlightedWord = null;
+
+        
+    let lang_tts_index = JSON.parse(document.body.dataset.lang_tts_index || '{}');
+
+
+    //
+    const audioWindowsContainer = document.getElementById('audio-windows-container');
+    // Get the add window button and windows container elements
+    const windowsContainer = document.getElementById('windows-container');
+
+    var numberOfWindows = 0
+    var memoryWindowOpen = 0
+
+    // Store listeners
+    let receiveListener=null
+    let endListener=null
+
+
+
+    let windowsWithoutWikiSuggester = {{ windows_without_wiki_suggester | tojson }};
+    windowsWithoutWikiSuggester = windowsWithoutWikiSuggester.map(element => parseInt(element));
+
+
+    {% for lang in langs %}
+      lang_message["{{ lang }}"] = 0
+      lang_name["{{ loop.index }}"] = "{{ lang }}"
+      lang_index["{{ lang }}"] = "{{ loop.index }}"
+      lang_visible["{{ lang }}"] = 0
+      {% if "Audio" in lang %}
+        lang_tts_index["{{ lang }}"] = "{{ loop.index }}"
+      {% endif %}
+      addWindow({{ loop.index}});
+      var element = document.getElementById('window-{{ loop.index }}');
+      element.style.display = "none"
+      lang_visible["{{ lang }}"] = 0
+    {% endfor %}
+
+
+    // Add the initial windows
+    let init_window_index;
+    {% for init_window in init_windows %}
+      init_window_index = {{ init_window }};
+      showWindow({{ init_window }});
+      //addWindow(init_window_index, !windowsWithoutWikiSuggester.includes(init_window_index));
+    {% endfor %}
+
+    // initialise all TTS windows for later faster loading
+    //Object.values(lang_tts_index).forEach(value => {
+    //  addWindow(value);
+    //});
+
+    // Get the add window button and windows container elements
+    let loop_index;
+
+      function showWindow(index) {
+        var element = document.getElementById(`window-${index}`);
+        if(element.style.display == "none") {
+            element.style.display = "block"
+            numberOfWindows = numberOfWindows + 1;
+            updateWindowWidth();
+            updateWindowContent(index)
+            lang_visible[lang_name[index]] = 1
+        }
+
+      }
+
+    {% for lang in langs %}
+      const add{{ loop.index }}Button = document.getElementById('{{ loop.index }}-button');
+      if (add{{ loop.index }}Button) {
+        // Handle add window button click
+        add{{ loop.index }}Button.addEventListener('click', () => {
+        /*var element = document.getElementById('window-content-{{ loop.index }}');
+        if (typeof (element) == 'undefined' || element == null) {
+          loop_index = {{ loop.index }}
+        };
+        addWindow(loop_index, !windowsWithoutWikiSuggester.includes(loop_index));*/
+        showWindow({{ loop.index }});
+      });
+    }
+
+    {% if host == False %}  
+    const add{{ loop.index }}Selection = document.getElementById('{{ loop.index }}-selection');
+    if (add{{ loop.index }}Selection) {
+        // Handle add window button click
+        add{{ loop.index }}Selection.addEventListener('click', () => {
+        showWindow({{ loop.index }});
+        lsdialog.style.display = 'none';
+    });
+    }
+    {% endif %}
+
+    {% endfor %}
+
+    {% if memory == True %}
+    const addMemoryButton = document.getElementById('memory-button');
+
+    // Handle add window button click
+    addMemoryButton.addEventListener('click', () => {
+      var element = document.getElementById('window-content--1');
+      if (typeof (element) == 'undefined' || element == null) {
+        if (memoryWindowOpen === 0) {
+          addMemoryWindow();
+          memoryWindowOpen = 1;
+        }
+      }
+    });
+    {% endif %}
+
+    function endLecture(reloadInsteadOfRedirect=False, indexUrl={{ url_for('index') | tojson }}) {
+      const dialog = document.getElementById('EndLectureDialog');
+      dialog.style.display = 'block';
+
+      const confirmBtn = document.getElementById('confirmBtnEndLecture');
+      confirmBtn.onclick = function() {
+          const confirmCheckbox = document.getElementById('confirmCheckbox');
+          const isChecked = confirmCheckbox.checked;
+
+          sent_end = true;
+          fetch('{{ server }}/{{ session }}/0/append', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify({ "controll": "END" }))
+          });
+
+          setTimeout(function () {
+            window.location.href = reloadInsteadOfRedirect ? window.location.href : indexUrl;
+          }, 1000);
+
+          if (!isChecked) {
+            fetch('delete_session/{{ session }}', {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Session content removed from database");
+                } else {
+                    console.log("Failed to delete session");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+          }
+
+          {% if correction_mode_deactivated == True %}
+              const data = {'task': errorCorrectionTaskName, 'user': {{user | tojson}}};
+              fetch('{{ server }}/set_text_as_done', {
+                  method: 'POST',
+                  headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+              })
+              .then((response) => response.text())
+              .then((data) => {
+                  console.log("Dataset marked as done");
+              });
+          {% endif %}
+
+          dialog.style.display = 'none';
+      }
+      const cancelBtn = document.getElementById('cancelBtnEndLecture');
+      cancelBtn.onclick = function() {
+          dialog.style.display = 'none';
+      }
+    }
+
+    {% if host == True %}
+    const logout = document.getElementById('logout');
+    logout.addEventListener('click', () => {
+      let indexUrl = {{ url_for('index') | tojson }};
+      {% if correction_mode_deactivated == True %}
+        indexUrl = 'about:blank';
+      {% endif %}
+      endLecture(false, indexUrl);
+    });
+
+
+    const clear = document.getElementById('clear');
+    clear.addEventListener('click', () => {
+      const dialog = document.getElementById('ClearDialog');
+      dialog.style.display = 'block';
+
+      const confirmBtn = document.getElementById('confirmBtnClear');
+      confirmBtn.onclick = function() {
+          fetch('{{ server }}/{{ session }}/0/append', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify({ "controll": "CLEAR" }))
+          });
+
+          dialog.style.display = 'none';
+      }
+
+      const cancelBtn = document.getElementById('cancelBtnClear');
+      cancelBtn.onclick = function() {
+          dialog.style.display = 'none';
+      }
+    });
+    {% endif %}
+
+
+    //Reading data
+    var source = new EventSource("{{ server }}/stream?channel={{ session }}", {
+      headers: {
+        'Content-Type': 'text/event-stream', // <- Important headers
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      }
+    });
+
+    source.addEventListener('message', function (e) {
+      const data = JSON.parse(e.data);
+      //console.log("GOT MESSAGE",data)
+
+      if("controll" in data && data["controll"] == "PAUSE") {
+        return;
+      }
+
+      if (!(data.sender in sender)) {
+
+
+        const request = new XMLHttpRequest();
+        const stream = data.sender.split(":")[1]
+        request.open('POST', '{{ server }}/{{ session }}/' + stream + '/get_output_language_component', false);  // `false` makes the request synchronous
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        request.send(JSON.stringify(JSON.stringify({ "component": data.sender })));
+
+        sender[data.sender] = request.responseText
+        sender_number[data.sender] = Object.keys(sender).length
+
+        // const response = await fetch('{{ server }}/{{ session }}/get_output_language_component', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Accept': 'application/json',
+        //     'Content-Type': 'application/json'
+        //   },
+        //   body: JSON.stringify(JSON.stringify({ "component": data.sender}))
+        // })
+        // print("Language for "+data.sender+": "+response)
+        // sender[data.sender] = response
+
+
+      }
+
+      if (sender[data.sender] in lang_visible && lang_visible[sender[data.sender]] == 1) {
+        w = document.getElementById(`window-content-` + lang_index[sender[data.sender]])
+        if (w != null) {
+          //console.log("Process message:"+data)					    
+          //console.log("Check if need to load previous messages:",data["message_id"],languages[sender[data.sender]])
+          if (!(data.sender in sender_ids) || parseInt(data["message_id"]) != sender_ids[data.sender] + 1) {
+            if (!(data.sender in sender_ids)) {
+              sender_ids[data.sender] = -1;
+            }
+            //First message for this language, but there have been previous languages
+            const request = new XMLHttpRequest();
+            request.open('POST', '{{ server }}/{{ session }}/get_previous_messages', false);  // `false` makes the request synchronous
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.send(JSON.stringify(JSON.stringify({ "component": data.sender, "begin": sender_ids[data.sender] + 1, "end": data["message_id"] - 1 })));
+            //console.log(request.responseText)
+            var messages = JSON.parse(request.responseText)
+            //console.log("Number of previous langauges:",)
+            messages.forEach(function (item, index) {
+              old_data = JSON.parse(item)
+              w = document.getElementById(`window-content-` + lang_index[sender[data.sender]])
+              if (w != null) {
+                if (old_data.unstable == false) {
+                  addMessage(lang_index[sender[old_data.sender]], old_data, sender[old_data.sender]);
+                  //show_text(lang_index[sender[data.sender]],old_data.seq,old_data.start,old_data.end)
+                  //w.innerHTML += old_data.seq
+                }
+              }
+
+            });
+
+
+
+          }
+          sender_ids[data.sender] = parseInt(data["message_id"])
+          //console.log("Add message", lang_index[sender[data.sender]], data.seq, sender[data.sender])
+          addMessage(lang_index[sender[data.sender]], data, sender[data.sender]);
+        }
+
+        if ("num_subscribers" in data) {
+          w = document.getElementById("online")
+          w.innerHTML = data["num_subscribers"] + " live";
+        }
+      }
+
+    }, false);
+
+
+
+    var menu = document.getElementById('menu');
+
+    if (window.matchMedia("(max-device-width: 767px)").matches) {
+      console.log("Mobile device detected");
+    } else {
+      console.log("Dekstop device detected");
+      var container = document.querySelector('.container'); 
+      container.addEventListener('mousemove', function (event) {
+        var mouseX = event.clientX;
+        var mouseY = event.clientY;
+
+        if (menu.style.left == "20px") { //current menu is shown
+          if (mouseX > 250) {
+            menu.style.left = '-300px'; // Move the menu back to its initial position
+          }
+        } else { //current menu is not shown
+          if (mouseX < 80 && mouseY > 130 && mouseY < 170) {
+            menu.style.left = '20px'; // Move the menu to the visible position
+          }
+        }
+      });
+    }
+
+  </script>
+</body>
+
+</html>

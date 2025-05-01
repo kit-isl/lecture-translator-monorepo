@@ -1,0 +1,220 @@
+<div class="session-info" id="accesslecture" width=800px>
+    <div class="window-header"> Access Rights Configuration
+        <div class="buttons-container"> <button class="close2-button" onclick="closeX()"><i class="fas fa-times"></i></button> </div>
+
+    </div>
+
+    <!--<div class="container mt-4"> -->
+        <div class="access-section">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Read Access</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="readSearch" class="form-label">Search Users/Groups:</label>
+                        <input type="text" id="readSearch" class="form-control" placeholder="Search for users or groups...">
+                    </div>
+                    <div>
+                        <h6>Assigned Read Access:</h6>
+                        <ul id="readList" class="list-group">
+                            <!-- Example assigned users/groups -->
+                            {% for name in read_access %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ name }}
+                                <button class="btn btn-danger btn-sm remove-btn">Remove</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+<div class="mt-3">
+    <label for="readAdd" class="form-label">Add User/Group:</label>
+    <input type="text" id="readAdd" class="form-control" placeholder="Type a name to add...">
+    <div id="readSuggestions" class="suggestions-box"></div>
+    <button class="btn btn-success mt-2" id="addReadBtn">Add</button>
+</div>
+
+
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Write Access</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="writeSearch" class="form-label">Search Users/Groups:</label>
+                        <input type="text" id="writeSearch" class="form-control" placeholder="Search for users or groups...">
+                    </div>
+                    <div>
+                        <h6>Assigned Write Access:</h6>
+                        <ul id="writeList" class="list-group">
+                            <!-- Example assigned users/groups -->
+                            {% for name in write_access %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ name }}
+                                <button class="btn btn-danger btn-sm remove-btn">Remove</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+<div class="mt-3">
+    <label for="writeAdd" class="form-label">Add User/Group:</label>
+    <input type="text" id="writeAdd" class="form-control" placeholder="Type a name to add...">
+    <div id="writeSuggestions" class="suggestions-box"></div>
+    <button class="btn btn-success mt-2" id="addWriteBtn">Add</button>
+</div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <button class="btn btn-primary" id="saveChangesBtn">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        const readList = document.getElementById('readList');
+        const writeList = document.getElementById('writeList');
+
+
+        document.getElementById('readSearch').addEventListener('input', () => {
+            filterList(readList, document.getElementById('readSearch').value.trim());
+        });
+
+        document.getElementById('writeSearch').addEventListener('input', () => {
+            filterList(writeList, document.getElementById('writeSearch').value.trim());
+        });
+
+        document.getElementById('saveChangesBtn').addEventListener('click', async () => {
+            const readAccess = getListItems(readList);
+            const writeAccess = getListItems(writeList);
+            const dir="{{ dir }}"
+            console.log("Save changes")
+
+            try {
+                const response = await fetch('{{ url_for('archivesession_access') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ dir, readAccess, writeAccess}),
+                });
+
+                if (response.ok) {
+                    alert('Access rights saved successfully!');
+                } else {
+                    alert('Failed to save access rights.');
+                }
+            } catch (error) {
+                console.error('Error saving access rights:', error);
+                alert('An error occurred while saving access rights.');
+            }
+        });
+
+        document.querySelectorAll('.remove-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('li').remove();
+            });
+        });
+
+
+        function getListItems(list) {
+            return Array.from(list.children).map(item => item.firstChild.textContent.trim());
+        }
+
+        function filterList(list, query) {
+            const lowercaseQuery = query.toLowerCase();
+            Array.from(list.children).forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(lowercaseQuery)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+    // Example predefined list of valid names/groups
+    const validNamesGroups = {{ users|safe }}
+
+    function addToList(list, itemText) {
+        if (!validNamesGroups.includes(itemText)) {
+            alert('Invalid name or group.');
+            return;
+        }
+
+        // Prevent duplicate entries
+        const existingItems = getListItems(list);
+        console.log("Exisitng:",existingItems)
+        console.log(itemText)
+        if (existingItems.includes(itemText)) {
+            alert('This name or group is already added.');
+            return;
+        }
+
+        const listItem = document.createElement('li');
+        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        listItem.textContent = itemText;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger btn-sm';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => listItem.remove());
+
+        listItem.appendChild(removeBtn);
+        list.appendChild(listItem);
+    }
+
+    function filterSuggestions(inputId, suggestionsId) {
+        const input = document.getElementById(inputId);
+        const suggestionsBox = document.getElementById(suggestionsId);
+        const query = input.value.trim().toLowerCase();
+
+        // Clear previous suggestions
+        suggestionsBox.innerHTML = '';
+
+        if (query) {
+            const matches = validNamesGroups.filter(name =>
+                name.toLowerCase().includes(query)
+            );
+
+            matches.forEach(match => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+                suggestionItem.textContent = match;
+
+                suggestionItem.addEventListener('click', () => {
+                    input.value = match;
+                    suggestionsBox.innerHTML = ''; // Clear suggestions on select
+                });
+
+                suggestionsBox.appendChild(suggestionItem);
+            });
+        }
+    }
+
+    document.getElementById('addReadBtn').addEventListener('click', () => {
+        const userInput = document.getElementById('readAdd').value.trim();
+        addToList(readList, userInput);
+        document.getElementById('readAdd').value = '';
+    });
+
+    document.getElementById('addWriteBtn').addEventListener('click', () => {
+        const userInput = document.getElementById('writeAdd').value.trim();
+        addToList(writeList, userInput);
+        document.getElementById('writeAdd').value = '';
+    });
+
+    document.getElementById('readAdd').addEventListener('input', () => {
+        filterSuggestions('readAdd', 'readSuggestions');
+    });
+
+    document.getElementById('writeAdd').addEventListener('input', () => {
+        filterSuggestions('writeAdd', 'writeSuggestions');
+    });
+
+
+
+
+    </script>

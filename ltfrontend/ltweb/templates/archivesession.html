@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/structure.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loadingBar.css') }}">
+    {% if chat == True %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/confirmMessage.css') }}">
+  </head>
+  <body>
+
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% set mode = "archive" %}
+{% include header %}
+
+    {% if 'admin' is in groups %}
+       <div class="logout" id="online_div">
+         <button class="language-button" id="online">
+             Viewed by {{ num_accesses }} user(s)
+           </button>
+       </div>
+    {% endif %}
+
+
+        {% if w_access %}
+          <div id="DeleteDialog" class="modal">
+            <div class="modal-content">
+              <p>Are you sure you want to delete this recording? This can't be undone.</p>
+              <div class="modal-actions">
+                <button id="confirmBtnDelete" class="language-button">Delete</button>
+                <button id="cancelBtnDelete" class="language-button">Cancel</button>
+              </div>
+          </div>
+        </div>
+        {% endif %}
+
+
+  <div class="container">
+    <div class="menu" id="menu">
+      <div class="menu-content">
+        <div class="menu-title">Languages</div>
+        <ul>
+        {% for lang in langs %}
+          <li><a id="{{ loop.index }}-button">{{ lang }}</a></li>
+        <!-- <button class="language-button" id="{{ loop.index }}-button">{{ lang }}</button> -->
+        {% endfor %}
+        {% if w_access %}
+          <li><a href="{{ url_for('archivesession_configure',dir=dir) }}">Configure</a></li>
+          <li><a id="delete_recording">Delete</a></li>
+        {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="sidebartop">
+      <div class="sidebar-icon">
+        <i class="fas fa-bars"></i>
+      </div>
+      </div>
+    <div class="content">
+
+    
+    <h1>{{ name }}</h1>
+
+
+       <div class="video-container"> 
+       <!-- <div class="sessions"> -->
+
+            {% if 'audio/wav' == mediatype %}
+          <audio controls id="media">
+          <source src="/archivemedia/{{ mediafile }}" type="audio/wav">
+            Your browser does not support the audio tag.
+          </audio>
+            {% elif 'video/mp4' == mediatype %}
+          <div class="resizable-video">
+          <video controls width="50%" id="media">
+            <source src="/archivemedia/{{ mediafile }}">
+              {% for lang in langs %}
+              <track label="{{ lang }}" kind="subtitles" src="/archivemedia/{{ mediafile }}/vtt/{{ lang }}">
+          {% endfor %}
+            Your browser does not support the video tag.
+          </video>
+        </div>
+            {% endif %}
+       <!-- </div> --> 
+
+    <div class="windows-container" id="windows-container">
+    {% for lang in langs_video %}
+      <div class="window" id="window-{{ loop.index}}">
+        <div class="window-header"> {{ lang }}
+        <span class="close-button" onclick="closeWindow(this)">&times;</span>
+        </div>
+        <div class="window-content" id="window-content-{{ loop.index }}">
+          <video controls width="100%" height="100%">
+            <source src="/archivemediafile/{{ mediafile }}/{{ lang }}.mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    {% endfor %}
+    {% for lang in langs_audio %}
+      <div class="window" id="window-{{ loop.index}}">
+        <div class="window-header"> {{ lang }}
+        <span class="close-button" onclick="closeWindow(this)">&times;</span>
+        </div>
+        <div class="window-content" id="window-content-{{ loop.index }}">
+          <video controls width="100%" height="100%">
+            <source src="/archivemediafile/{{ mediafile }}/{{ lang }}.wav">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+
+    {% include 'loadingBar.html' %}
+
+    {% if chat == True %}
+    {% include 'chat.html' %}
+    {% endif %}
+
+    </div>
+  </div>
+  <!-- -->
+  </div>
+
+    {% include 'sessionWindow.html' %}
+
+    
+<script src="{{ url_for('static', filename='js/eventsource-polyfill.js') }}"></script>
+    <script>
+      var lang_index = {};
+      var lang_name = {};
+      var langText = {};
+      var langIndex = {};
+      var langType = {};
+      var langWindow = {};
+
+      // Get the add window button and windows container elements
+      const windowsContainer = document.getElementById('windows-container');
+      var numberOfWindows = 0
+
+      {%for lang in langs %}
+      lang_index["{{ lang }}"] ={{ loop.index}}
+      lang_name["{{ loop.index }}"] = "{{ lang }}"
+      addWindow({{ loop.index}});
+
+    {% endfor %}
+
+
+      // Get the add window button and windows container elements
+      {% for lang in langs %}
+      
+      const add{{ loop.index }}Button = document.getElementById('{{ loop.index }}-button');
+
+      // Handle add window button click
+      add{{ loop.index }}Button.addEventListener('click', () => {
+        var element =  document.getElementById('window-{{ loop.index }}');
+        element.style.display = "block"
+        numberOfWindows = numberOfWindows +1;
+        updateWindowWidth();
+      });
+      var element =  document.getElementById('window-{{ loop.index }}');
+      element.style.display ="none"
+
+
+
+      {% endfor %}
+
+
+      {% if w_access %}
+      const delete_button = document.getElementById('delete_recording');
+    delete_button.addEventListener('click', () => {
+      delete_archive_recording(false);
+    });
+
+
+    function delete_archive_recording(reloadInsteadOfRedirect=false) {
+      const dialog = document.getElementById('DeleteDialog');
+      dialog.style.display = 'block';
+
+      const confirmBtn = document.getElementById('confirmBtnDelete');
+      confirmBtn.onclick = function() {
+
+        window.location.href = reloadInsteadOfRedirect ? window.location.href : "{{ url_for('delete_recording',dir=dir) }}"
+      }
+      const cancelBtn = document.getElementById('cancelBtnDelete');
+      cancelBtn.onclick = function() {
+          dialog.style.display = 'none';
+      }
+    }
+
+
+      {% endif %}
+
+      
+
+      var media = document.getElementById("media");
+
+      media.addEventListener("timeupdate", function() {
+        if (document.ignoreTimeUpdate) {
+            return;
+        }
+
+        var currentTime = media.currentTime;
+
+        {% for lang in langs %}
+        if (! ("{{ loop.index }}" in langText)) {
+          button = document.getElementById("toogleView-{{loop.index}}")
+          if(button.textContent == "Show Markup") {
+            langType[{{ loop.index }}]="plain_transcript"
+            langWindow[{{ loop.index }}]=document.getElementById('window-content-{{ loop.index }}')
+          }else {
+            langType[{{ loop.index }}]="markup_transcript"
+            langWindow[{{ loop.index }}]=document.getElementById('window-content-structured-{{ loop.index }}')
+          }
+          langText[{{ loop.index }}] = langWindow[{{ loop.index }}].getElementsByClassName(langType[{{ loop.index }}])[0]
+          langIndex[{{ loop.index }}]=0
+        }
+        start=parseFloat(langText[{{ loop.index }}].getAttribute("start"))
+        end=parseFloat(langText[{{ loop.index }}].getAttribute("end"))
+        if (currentTime >= start && currentTime <  end ) {
+          langText[{{ loop.index }}].style.fontWeight = "bold"
+          langWindow[{{ loop.index }}].scroll({top: langText[{{ loop.index }}].offsetTop - 200, behavior: 'smooth'});
+        }else {
+              langText[{{ loop.index }}].style.fontWeight = "normal"
+              while(currentTime < start && langIndex[{{ loop.index }}] > 0) {
+                      langIndex[{{ loop.index }}] --;
+                      langText[{{ loop.index }}] = langWindow[{{ loop.index }}].getElementsByClassName(langType[{{ loop.index }}])[langIndex[{{ loop.index }}]]
+                      start=parseFloat(langText[{{ loop.index }}].getAttribute("start"))
+                      end=parseFloat(langText[{{ loop.index }}].getAttribute("end"))
+                      }
+              while(currentTime >= end && langIndex[{{ loop.index }}] < langWindow[{{ loop.index }}].getElementsByClassName(langType[{{ loop.index }}]).length) {
+                      langIndex[{{ loop.index }}] ++;
+                      langText[{{ loop.index }}] = langWindow[{{ loop.index }}].getElementsByClassName(langType[{{ loop.index }}])[langIndex[{{ loop.index }}]]
+                      start=parseFloat(langText[{{ loop.index }}].getAttribute("start"))
+                      end=parseFloat(langText[{{ loop.index }}].getAttribute("end"))
+                      }
+                      
+              if (currentTime >= start && currentTime <  end ) {
+                    langText[{{ loop.index }}].style.fontWeight = "bold"
+                    button = document.getElementById("toogleView-{{loop.index}}")
+                    if(button.textContent == "Show Markup") {
+                      document.getElementById('window-content-{{ loop.index }}').scroll({top: langText[{{ loop.index }}].offsetTop - 200, behavior: 'smooth'});
+                    }else {
+                      document.getElementById('window-content-structured-{{ loop.index }}').scroll({top: langText[{{ loop.index }}].offsetTop - 200, behavior: 'smooth'});            
+                    }
+
+                }
+    }
+              
+        {% endfor %}
+
+
+            });
+
+
+
+           // function that gets input text (usedContext from the Chatbot and searches for the correct transcript part, then sets the video time to the belonging part)
+           // the function needs to be called when 'usedContext' changes
+           function jumpToTextAndTime(inputText) {
+              var found = false;
+
+              {% for lang in langs %}
+              // Determine the active transcript type
+              var button = document.getElementById("toogleView-{{loop.index}}");
+              var langType = button.textContent == "Show Markup" ? "plain_transcript" : "markup_transcript";
+              var langWindow = document.getElementById(button.textContent == "Show Markup" ? 
+                                                        'window-content-{{ loop.index }}' : 
+                                                        'window-content-structured-{{ loop.index }}');
+              var transcriptSegments = langWindow.getElementsByClassName(langType);
+
+              // Search for the input text in the current language transcript
+              for (var i = 0; i < transcriptSegments.length; i++) {
+                  var segment = transcriptSegments[i];
+                  if (segment.textContent.trim().includes(inputText)) {
+                      console.log('found the fitting segment:')
+                      console.log(segment.textContent)
+                      var start = parseFloat(segment.getAttribute("start"));
+                      var end = parseFloat(segment.getAttribute("end"));
+
+                      // Set video time
+                      media.currentTime = start;
+
+                      // Highlight the text
+                      segment.style.fontWeight = "bold";
+
+                      // Scroll the transcript window
+                      langWindow.scroll({ top: segment.offsetTop - 200, behavior: 'smooth' });
+
+                      found = true;
+                      break;
+                  }
+              }
+
+            // Reset the font weight for non-matching segments
+            if (found) {
+                var matchedIndex = i;  // Store the index of the matching segment
+
+                // Reset font weight for all segments
+                for (var j = 0; j < transcriptSegments.length; j++) {
+                    if (j !== matchedIndex) {
+                        transcriptSegments[j].style.fontWeight = "normal";
+                    }
+                }
+
+                // No need for a break statement; the outer loop will continue for other languages
+            }
+              {% endfor %}
+
+              // If no match was found, notify the user
+              if (!found) {
+                  console.log("Text not found in any transcript.");
+              }
+          }
+
+    // add function here that jumps to fitting transcript part when varibale usedContext is changed:
+    window.addEventListener('contextUpdated', (event) => {
+      const searchActive = window.isActive;
+      if (searchActive) {
+        const usedContext = event.detail;
+        console.log('detected in sessionWindow usedContext:', usedContext);
+        const truncatedContext = usedContext.length > 20 ? usedContext.substring(0, 20) : usedContext;
+
+        console.log('call function: jumpToTextAndTime');
+        jumpToTextAndTime(truncatedContext);
+      }
+      else {
+        console.log('search not active')
+      }
+    });
+
+
+
+    var menu = document.getElementById('menu');
+
+    var container = document.querySelector('.container');
+    container.addEventListener('mousemove', function (event) {
+      var mouseX = event.clientX;
+      var mouseY = event.clientY;
+
+      if (menu.style.left == "20px") { //current menu is shown
+        if (mouseX > 250) {
+          menu.style.left = '-300px'; // Move the menu back to its initial position
+        }
+      } else { //current menu is not shown
+        if (mouseX < 80 && mouseY > 130 && mouseY < 170) {
+          menu.style.left = '20px'; // Move the menu to the visible position
+        }
+      }
+    });
+
+
+const elementToMonitor = document.querySelector('.resizable-video');
+
+var orientation = "landscape";
+
+function isBelow50Percent(element) {
+    const windowWidth = window.innerWidth;
+    const elementWidth = element.offsetWidth;
+    console.log("Below 50:",windowWidth,elementWidth)
+    return (elementWidth < windowWidth * 0.5);
+}
+
+{% if 'video/mp4' == mediatype %}
+
+function resizeElement() {
+    if (isBelow50Percent(elementToMonitor)) {
+        // Resize the element here (for demonstration purposes, just setting a new width)
+        var wc = document.querySelector('.windows-container');
+        wc.style.width = "50%"
+        orientation = "portrait";
+        updateWindowWidth()
+    } else {
+        // Reset the size if not below 50% (for demonstration purposes, resetting to original size)
+        var wc = document.querySelector('.windows-container');
+        wc.style.width = "100%"
+        orientation = "landscape";
+        updateWindowWidth()
+    }
+}
+
+const resizeObserver = new ResizeObserver(resizeElement);
+console.log("Element to monitor:",elementToMonitor)
+resizeObserver.observe(elementToMonitor);
+
+{% endif %}
+
+			   function getData(page,limit) {
+
+			   
+			   console.log("Page:",page,"Limit:",limit)
+			   // Fetch data asynchronously after the initial page load
+            fetch(`/archive_messages/{{ mediafile }}?page=${page}&limit=${limit}`)
+                .then(response => response.json())
+                .then(d => {
+											    // Add data to the DOM
+											    console.log("Totale number of entries: ",d["total"]);
+											    total = d["total"]
+											    data = d["data"]
+											    for (let i = 0; i < data.length; i++) {
+
+                        	  var msg = JSON.parse(data[i][1])
+                            console.log('message:')
+                            console.log(msg)
+																    //console.log(lang_index[data[i][0]])
+																    //console.log(i)
+														addMessage(lang_index[data[i][0]],msg,1,0)
+														}
+                            console.log("Data processed");
+											    return parseInt(total)
+														})
+														.then(total => {
+
+
+											    if(page*limit < total) {
+                                setLoadingPercentage(Math.floor(page*limit/total * 100))
+													       getData(page+1,limit);
+													    } else {
+                                const loadingWrapper = document.querySelector('.loading-wrapper');
+                                loadingWrapper.classList.add('hidden');   
+                                var element =  document.getElementById('window-1');
+                                element.style.display ="block"
+                                numberOfWindows = numberOfWindows +1;
+                                updateWindowWidth();
+
+                              }
+													    })
+													    .catch(error => {
+                    console.error('Error fetching data:', error);
+                    console.error('Data:', data[i][1]);
+                    console.error('Data:', data[i][1]);
+											    });
+											    
+
+			   
+
+
+			   }
+
+		
+  document.addEventListener('DOMContentLoaded', function() {
+  var total = "1"
+  var page = 0
+  var limit = 1000
+  getData(page,limit);
+													       
+        });
+
+			   
+    </script>
+
+
+  </body>
+</html>

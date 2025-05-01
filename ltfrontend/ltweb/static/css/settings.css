@@ -1,0 +1,103 @@
+/* Style for the container */
+.session-info {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for form rows */
+.form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Style for form columns */
+.form-column {
+    flex-basis: 50%;
+    padding-right: 10px;
+}
+
+/* Style for the label */
+label {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Style for the input */
+input[type="text"],
+select {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #f2f2f2;
+}
+
+/* Style for the toggle button */
+.toggle-button {
+    background-color: rgba(31, 88, 201, 0.81);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Style for the advanced options section */
+.advanced-options {
+    display: none;
+    margin-top: 20px;
+}
+
+/* Style for the hidden advanced options section */
+.hidden {
+    display: none;
+}
+
+/* Style for the advanced options label */
+.advanced-options label {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Style for the advanced options select */
+.advanced-options select {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #f2f2f2;
+
+}
+
+/* Style for the advanced options checkbox */
+.advanced-options input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+
+button[type="submit"] {
+    padding: 10px 20px;
+    background-color: rgba(70, 100, 170, 1);
+    color: #fff;
+    border-radius: 5px;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    margin: 20px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+
+}
+
+button[type="submit"]:hover {
+    background-color: rgba(70, 100, 170, 1);
+}

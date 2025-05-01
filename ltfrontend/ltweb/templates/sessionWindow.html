@@ -1,0 +1,1850 @@
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+
+    function addWindow(index, addWindowWikiSuggesterToWindow = true) {
+        console.log("Add window",index);
+        w = document.getElementById('window-content-' + index)
+        if (w != null) {
+            return; // early stop if the target window have been created somewhere to avoid dupplicated creating
+        }
+        const windowElement = document.createElement('div');
+        windowElement.classList.add('window');
+        windowElement.id = "window-" + index
+
+        // window.print(index);
+        if ((!lang_name[index.toString()].includes("Audio") && !lang_name[index.toString()].includes("Correction"))) {
+
+            const windowHeader = document.createElement('div')
+            windowHeader.className = "window-header"
+            windowHeader.innerHTML = lang_name[index]
+            windowElement.append(windowHeader)
+
+            const ttsButtonsContainer = document.createElement("div");
+            ttsButtonsContainer.className = "tts-buttons-container";
+            windowHeader.appendChild(ttsButtonsContainer)
+
+            const buttonsContainer = document.createElement("div");
+            buttonsContainer.className = "buttons-container";
+            windowHeader.appendChild(buttonsContainer)
+
+            {% for lang in langs %}
+            {% if "Audio" in lang %}
+            var lang = "{{ lang }}";
+            if (lang.includes(lang_name[index.toString()])) {
+                const ttsButton = document.createElement("button")
+                ttsButton.id = "ttsbutton-{{ loop.index }}"
+                ttsButton.className = "tts-button"
+                ttsButton.innerHTML = "<i class=\"fas fa-play\"></i>";
+                ttsButtonsContainer.append(ttsButton)
+
+                /*const ttsNotice = document.createElement("button");
+                ttsNotice.className = "edit-button"
+                ttsNotice.id = "ttsnotice-{{ loop.index }}"
+                ttsNotice.textContent = "please say some..."
+                ttsNotice.style.visibility = 'hidden';
+                ttsButtonsContainer.append(ttsNotice)*/
+
+                if (ttsButton) {
+                    ttsButton.addEventListener('click', () => {
+                        var element = document.getElementById('window-content-{{ loop.index }}');
+                        //check if the target audio window exists, if not then create it
+                        if (typeof (element) == 'undefined' || element == null) {
+                            addWindow("{{ loop.index }}");
+                        }
+
+                        var icon = ttsButton.querySelector('i');
+                        // check if the target button status is "play", if so then mute all the other audioplayers and unmute this one
+                        // at the same time also toggle the button to a different status
+                        //console.log(icon.classList)
+                        if (icon.classList.contains('fa-play')) {
+                            console.log("found that ico is fa-play...")
+                            for (var [key, value] of Object.entries(lang_tts_index)) {
+                                if (!key.includes(lang_name[index.toString()])) {
+                                    var ttsButton1 = document.getElementById("ttsbutton-" + value);
+                                    if (ttsButton1 != null) {
+                                        var icon1 = ttsButton1.querySelector('i');
+                                        window.removeEventListener('message', receiveListener);
+                                        window.removeEventListener('message', endListener);
+                                        muteControlAudioPlayer('video-iframe-' + value, true)
+                                        // console.log('mute the window of', lang_name[value.toString()]);
+                                        toggleToAudioButton("ttsbutton-" + value.toString(), ['fas', 'fa-play'])
+                                        // Remove previous listeners if they exist
+                                        /*if (document.getElementById("window-" + value)!=null) {
+                                            closeWindowNotViaButton("window-" + value.toString());
+                                        }*/
+                                    }
+                                }
+                            }
+                            receiveListener = function (event) {
+                                if (event.origin !== window.location.origin) {
+                                    // Ignore messages from unexpected origins
+                                    return;
+                                }
+                                if (typeof event.data === 'object' && event.data.type === 'audio-received') {
+                                    const { playerId } = event.data;
+                                    if (playerId === '{{ loop.index }}') {
+                                        // console.log('The audio has been loaded to the iframe player.');
+                                        //console.log(`Audio received from player ${playerId}`);
+                                        toggleToAudioButton("ttsbutton-{{ loop.index }}", ['fas', 'fa-pause']);
+                                    }
+                                }
+                            };
+
+                            endListener = function (event) {
+                                if (event.origin !== window.location.origin) {
+                                    // Ignore messages from unexpected origins
+                                    return;
+                                }
+                                if (typeof event.data === 'object' && event.data.type === 'fragment-finished') {
+                                    const { playerId } = event.data;
+                                    if (playerId === '{{ loop.index }}') {
+                                        // console.log('The audio in the iframe has finished playing.');
+                                        toggleToAudioButton("ttsbutton-{{ loop.index }}", ['fa', 'fa-spinner', 'fa-spin']);
+                                        //const w_ttsnotice = document.getElementById('ttsnotice-{{ loop.index }}')
+                                        //w_ttsnotice.style.visibility = 'visible';
+                                    }
+                                }
+                            };
+
+                            muteControlAudioPlayer("video-iframe-{{ loop.index }}", false);
+                            toggleToAudioButton("ttsbutton-{{ loop.index }}", ['fa', 'fa-spinner', 'fa-spin']);
+                            // TODO:
+                            // 1. could be loading state while loading the audio
+                            // 2. could be no text coming in the quese anymore
+                            // Add new listeners
+                            window.addEventListener('message', receiveListener);
+                            window.addEventListener('message', endListener);
+                        } else {
+                            // Remove the existing listeners
+                            // console.log('before rmbug',receiveListener)
+                            window.removeEventListener('message', receiveListener);
+                            window.removeEventListener('message', endListener);
+                            // console.log('after rmbug',receiveListener)
+                            muteControlAudioPlayer("video-iframe-{{ loop.index }}", true);
+                            toggleToAudioButton("ttsbutton-{{ loop.index }}", ['fas', 'fa-play']);
+                            //closeWindowNotViaButton("window-{{ loop.index }}");
+                        }
+                    });
+                }
+            }
+            {% endif %}
+            {% endfor %}
+
+            {% if 'admin' is in groups and errorCorrectionTools %}
+            const editButton = document.createElement("button");
+            editButton.className = "edit-button"
+            editButton.id = `edit-button-${lang_name[index]}`;
+            editButton.textContent = "Edit"
+
+            if (typeof currentSelection === "undefined" || currentSelection === null) {
+                editButton.style.visibility = 'hidden';
+            } else {
+                editButton.style.visibility = 'visible';
+            }
+
+            editButton.onclick = function () {
+                if (typeof currentSelection === "undefined" || currentSelection === null) {
+                    return;
+                }
+
+                const existingTextArea = document.getElementById("edit-textarea");
+                if (existingTextArea === null) {
+                    const textAreaSpan = document.createElement("span");
+                    textAreaSpan.setAttribute("start", currentSelection[4].getAttribute("start"));
+                    textAreaSpan.setAttribute("end", currentSelection[5].getAttribute("end"));
+                    const textArea = document.createElement("textarea");
+                    textArea.setAttribute("id", "edit-textarea");
+                    let textForTextArea = "";
+                    let node = currentSelection[4];
+                    let oldNode;
+                    while (node !== null && node.previousSibling !== currentSelection[5]) {
+                        if (node.nodeName === "SPAN") {
+                            const nodeIterator = document.createNodeIterator(node, NodeFilter.SHOW_TEXT, null);
+                            let textNode = nodeIterator.nextNode();
+
+                            while (textNode) {
+                                textForTextArea += textNode.data;
+                                textNode = nodeIterator.nextNode();
+                            }
+                        }
+
+                        oldNode = node;
+                        node = node.nextSibling;
+
+                        if (oldNode !== currentSelection[5]) {
+                            oldNode.remove();
+                        }
+                    }
+                    textArea.value = textForTextArea;
+                    textAreaSpan.appendChild(textArea);
+                    currentSelection[5].parentNode.replaceChild(textAreaSpan, currentSelection[5]);
+                    isSelectModeActive = false;
+                } else {
+                    const textAreaSpan = existingTextArea.parentNode;
+                    sendSelectionToolMessage({ "action": "replace", "component": currentSelection[0], "start": textAreaSpan.getAttribute("start"), "end": textAreaSpan.getAttribute("end"), "seq": existingTextArea.value });
+                    textAreaSpan.innerHTML = existingTextArea.value;
+                    currentSelection = null;
+                    isSelectModeActive = true;
+                    document.querySelectorAll('.edit-button').forEach(button => {
+                        button.style.visibility = 'hidden';
+                    });
+                }
+            };
+            buttonsContainer.append(editButton)
+            {% endif %}
+
+            const plainButton = document.createElement("button")
+            plainButton.className = "plain-button"
+            plainButton.id = "toogleView-" + index
+            plainButton.style.display = "none"
+            plainButton.textContent = "Show Markup"
+            plainButton.setAttribute("onclick", `toggleView(${index}, this)`);
+            buttonsContainer.append(plainButton)
+
+            // Create a container div for the font size buttons
+            const fontSizeButtonsContainer = document.createElement("div");
+            fontSizeButtonsContainer.id = "font-size-buttons";
+
+            // Create the "Decrease Font" button
+            const decreaseFontButton = document.createElement("button");
+            decreaseFontButton.id = "decrease-font";
+            decreaseFontButton.textContent = "a"; // Small "a" for visual representation
+            decreaseFontButton.addEventListener("click", () => changeFontSizeWindow(-1));
+
+            // Create the "Increase Font" button
+            const increaseFontButton = document.createElement("button");
+            increaseFontButton.id = "increase-font";
+            increaseFontButton.textContent = "A"; // Large "A" for visual representation
+            increaseFontButton.addEventListener("click", () => changeFontSizeWindow(1));
+
+            // Append the buttons to the container
+            fontSizeButtonsContainer.appendChild(decreaseFontButton);
+            fontSizeButtonsContainer.appendChild(increaseFontButton);
+
+            // Append the container to the document (e.g., body or a specific element)
+            document.body.appendChild(fontSizeButtonsContainer);
+
+
+            let currentFontSize = 22; // Initial font size in px
+
+            function changeFontSizeWindow(increment) {
+                // Set the font size limits
+                const minSize = 8;
+                const maxSize = 100;
+
+                // Increase or decrease font size based on the button clicked
+                currentFontSize += increment * 4; // Change the font size by 4px each time
+
+                // Ensure the font size stays within the limits
+                if (currentFontSize < minSize) {
+                    currentFontSize = minSize;
+                } else if (currentFontSize > maxSize) {
+                    currentFontSize = maxSize;
+                }
+
+                // Apply the selected font size to the input field and buttons
+                const windowContent = document.getElementById('window-content-' + index)
+                const summaryContent = document.getElementById('window-content-structured-' + index)
+
+
+                if (windowContent) {
+                    windowContent.style.fontSize = currentFontSize + 'px';
+                }
+                if (summaryContent) {
+                    summaryContent.style.fontSize = currentFontSize + 'px';
+                }
+            }
+
+            // Add event listener for shortcut: keydown + (to increase font size of window)
+            document.addEventListener('keydown', (event) => {
+                if (event.key === '+') {
+                    // Increase font size
+                    changeFontSizeWindow(2);
+                } else if (event.key === '-') {
+                    // Decrease font size
+                    changeFontSizeWindow(-2);
+                }
+            });
+
+
+            // Append the dropdown menu to the buttonsContainer
+            buttonsContainer.append(fontSizeButtonsContainer);
+
+            const fullscreenButton = document.createElement("button")
+            fullscreenButton.className = "fullscreen-button"
+            fullscreenButton.innerHTML = "<i class=\"fas fa-expand-arrows-alt\"></i> "
+            fullscreenButton.setAttribute("onclick", "toggleFullScreen('window-" + index + "')");
+            buttonsContainer.append(fullscreenButton)
+
+            const closeButton = document.createElement("button")
+            closeButton.className = "close2-button"
+            closeButton.innerHTML = "<i class=\"fas fa-times\"></i>"
+            closeButton.setAttribute("onclick","closeWindow(this)")
+            buttonsContainer.append(closeButton)
+
+            // Add the window to the windows container
+            windowsContainer.appendChild(windowElement);
+            //console.log("Number of windows:",numberOfWindows)
+            updateWindowWidth()
+        } else {
+            windowElement.style.display = 'none'
+            // Add the window to the audiowindows container
+            audioWindowsContainer.appendChild(windowElement);
+        }
+
+        const windowContent = document.createElement('div')
+        windowContent.className = "window-content"
+        windowContent.id = "window-content-" + index
+        windowContent.style.display = "block"
+        windowElement.append(windowContent)
+
+        const toc = document.createElement('div')
+        toc.className = "toc"
+        toc.id = "toc-" + index
+        toc_heading = document.createElement('h3')
+        toc_heading.textContent = "Table of Contents"
+        toc.append(toc_heading)
+        toc_list = document.createElement('ul')
+        toc.append(toc_list)
+        windowElement.append(toc)
+
+        const windowContentStructured = document.createElement('div')
+        windowContentStructured.className = "window-content-structured"
+        windowContentStructured.id = "window-content-structured-" + index
+        windowContentStructured.style.display = "none"
+        windowElement.append(windowContentStructured)
+
+        if (addWindowWikiSuggesterToWindow) {
+            addWindowWikiSuggester(windowElement, index);
+        }
+
+        {% if mode == "live" %}
+        createChapterElement(index, 0, 0)
+        toggleText(index, 0)
+        // Update the window content
+        updateWindowContent(index);
+        {% elif mode == "archive" %}
+        createChapterElement(index, 0, 0)
+        {% endif %}
+    }
+
+    {% if memory == True %}
+    // Function to add a window
+    function addMemoryWindow() {
+        // Create the window element
+        const windowElement = document.createElement('div');
+        windowElement.classList.add('window');
+        windowElement.innerHTML = `
+          <div class="window-header">
+            Context biasing
+            <span class="close-button" onclick="closeWindow(this)">&times;</span>
+          </div>
+          <div class="window-content" id="window-content-memory">
+            <form id="extractForm" style="display: none">
+              <label for="pdffile">Upload pdf file for automatic new words extraction</label>
+              <input type="file" id="pdffile" name="pdffile" accept=".pdf">
+              <br><br>
+              <button id="extract_memory" name="extract_memory" type="submit">Extract memory</button>
+            </form>
+            <br><br>
+            <textarea id="memory" name="memory" placeholder="Type context biasing words..." style="height: 225px"></textarea>
+            <button id="update_memory" name="update_memory">Update memory</button>
+          </div>
+        `;
+
+        // Add the window to the windows container
+        windowsContainer.appendChild(windowElement);
+
+        numberOfWindows = numberOfWindows + 1;
+        //console.log("Number of windows:",numberOfWindows)
+        updateWindowWidth()
+
+        var memory_button = document.getElementById('update_memory');
+        var memory = document.getElementById("memory");
+        var extract_button = document.getElementById('extract_memory');
+        var pdffile = document.getElementById("pdffile");
+
+        fetch('last_memory_words/{{ profile_id }}')
+            .then(response => response.text())
+            .then(data => {
+                memory.value = data;
+                memory_button.click();
+            })
+            .catch(error => {
+                console.error('Error loading last memory words:', error);
+            });
+
+        memory_button.addEventListener('click', () => {
+            memory_button.disabled = true;
+            extract_button.disabled = true;
+            fetch('update_memory/{{ session }}/{{ profile_id }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(memory.value)
+            })
+                .then(data => {
+                    setTimeout(function () {
+                        memory_button.disabled = false;
+                        extract_button.disabled = false;
+                    }, 1000);
+                });
+        });
+
+        document.getElementById("extractForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent the form from submitting traditionally
+
+            const formData = new FormData(event.target); // Get form data
+
+            memory_button.disabled = true;
+            extract_button.disabled = true;
+            fetch('extract_memory/{{ session }}', {
+                method: 'POST',
+                body: formData
+            });
+        });
+    }
+    {% endif %}
+
+    function get_spk(data) {
+        if (data.speakerName != null) {
+            const senderName = data.speakerName.split(":")
+            var spk = senderName[senderName.length - 1]
+            if (spk.startsWith("unk-")) {
+                spk = "Anonymous-" + spk.split("-")[1]
+            }
+        } else {
+            var spk = undefined
+        }
+        return spk
+    }
+
+
+    function addMessage(lang_id, data, sender_id, old = false, scrolling = 1) {
+        let action = "action" in data ? data.action : "add";
+        // console.log(" sender_id:",sender_id, " sender:",data)
+        const w = document.getElementById(`window-content-` + lang_id)
+        //onsole.log("lang_id: ",lang_id)
+        //.replace(" Audio", ""))
+        // const audio = document.getElementById('TTS-audio')
+        const wMarkup = document.getElementById(`window-content-structured-` + lang_id);
+
+        const wAtBottom = w.scrollHeight - w.clientHeight <= w.scrollTop + 1;
+        const wMarkupAtBottom = wMarkup.scrollHeight - wMarkup.clientHeight <= wMarkup.scrollTop + 1;
+
+        if ("mode" in data && data["sender"].startsWith("textstructurer")) {
+            //console.log("Setting mode to: ",data["mode"])
+            if (data["mode"] == "online_model" || data["mode"] == "offline_model") {
+                //console.log("Adding button")
+                button = w.parentElement.querySelector(".plain-button")
+                if (button) {
+                    button.style.display = "block"
+                    button.textContent = "Show Plain";
+                }
+                w.style.display = button.textContent === "Show Markup" ? "block" : "none"
+                wMarkup.style.display = button.textContent === "Show Plain" ? "block" : "none"
+            }
+        }
+
+        if ("seq" in data && data.words != null && data.sender.startsWith("asr") && w.style.display === "none") {
+            console.log("Showing markup from asr check")
+            button = w.parentElement.querySelector(".plain-button")
+            if (button && button.style.display == "none") {
+                button.style.display = "block"
+                button.textContent = "Show Plain";
+            }
+            w.style.display = button.textContent === "Show Markup" ? "block" : "none"
+            wMarkup.style.display = button.textContent === "Show Plain" ? "block" : "none"
+        }
+
+        if ("refined_sentence_cluster" in data) {
+            console.log("Refined sentence cluster:", data)
+
+            const sentence_word_id = data["sentence_word_id"]
+            const all_span_has_word_order = document.querySelectorAll('span[word-order]');
+            var spk = data["refined_sentence_cluster"]
+            if (spk.startsWith("unk-")) {
+                spk = "Anonymous-" + spk.split("-")[1]
+            }
+            // only care about span has word_order in sentence_word_id
+            const refined_span = Array.from(all_span_has_word_order).filter(span => {
+                const wordOrder = Number(span.getAttribute('word-order'));
+                return sentence_word_id.includes(wordOrder);
+            });
+            refined_span.forEach(span => {
+                const current_span_spk = span.parentElement.getAttribute('speaker-title');
+                if (current_span_spk !== "undefined" && current_span_spk !== spk) {
+                    span.parentElement.setAttribute('speaker-title', spk);
+                    console.log("Change speaker tag:", span, current_span_spk, spk)
+                }
+            });
+            update_speaker_tag(wMarkup)
+            remove_reduntant_speaker_tag(wMarkup)
+        }
+
+        if ("seq" in data && !data.sender.startsWith("tts")) {
+            const start = parseFloat(data.start)
+            const end = parseFloat(data.end)
+            if (data.unstable == false) {
+                //console.log("Got stable data:", data)
+                if (!("markup" in data) || data["markup"] == "paragraphBreak") {
+                    const additionalClasses = [];
+
+                    if (data["markup"] == "paragraphBreak") {
+                        //console.log("Stable Paragraph Break", data)
+                        additionalClasses.push('paragraph-break');
+                    }
+                    unstable = document.getElementById(`unstable-` + sender_id)
+                    if (unstable != null) {
+                        unstable.display = "none"
+                        w.removeChild(unstable)
+                    }
+                    unstable = document.getElementById(`unstable-structured` + sender_id)
+                    if (unstable != null) {
+                        unstable.display = "none"
+                        const field = wMarkup.querySelectorAll(`.text-original`)
+                        field[field.length - 1].removeChild(unstable);
+                    }
+
+                    if (data.words != null && data.sender.startsWith("asr")) {
+                        new_seq = ""
+                        const word_stream_id = data.sender.split(":")[1];
+                        const word_session_id = data.session;
+                        for (var i = 0; i < data.words.length; i++) {
+                            new_seq += `<span class='word' word-order='${data.word_id[i]}' word-stream-id='${word_stream_id}' word-session-id='${word_session_id}'> ${data.words[i]}</span>`
+                            //new_seq += `<span class='word' word-order='${data.word_id[i]}' speaker-title="${spk}"> ${data.words[i]}</span>`
+                        }
+                        data.seq = new_seq
+                    }
+
+                    const spk = get_spk(data)
+
+                    show_text(w, data.seq, start, end, ...[,], action, undefined, additionalClasses.concat(["plain_transcript"]));
+                    show_markup_text(wMarkup, data.seq, start, end, lang_id, action, spk, additionalClasses.concat(["markup_transcript"]));
+
+                    if (data["markup"] == "paragraphBreak") {
+                        const relevantChapter = findRelevantChapter(wMarkup, data.start);
+                        insertParagraphBreakIntoAllRates(relevantChapter, data.start, data.end, lang_id);
+                    }
+
+                    if (data.words != null && data.sender.startsWith("asr")) {
+                        add_selecting_word_action(wMarkup)
+                    }
+
+                    if (spk != undefined) {
+                        update_speaker_tag(wMarkup)
+                    }
+
+                } else if (data["markup"] == "chapterBreak") {
+                    createChapterElement(lang_id, wMarkup.querySelectorAll('.chapter').length, start)
+                    update_speaker_tag(wMarkup)
+                    console.log("ChapterBreak")
+                } else if (data["markup"] == "heading") {
+                    addChapterHeading(wMarkup, data.seq, start, end, old = old)
+                    const tocElement = createTocElement(data.seq, wMarkup.querySelectorAll('.chapter')[wMarkup.querySelectorAll('.chapter').length - 1])
+                    const toc = document.getElementById(`toc-` + lang_id)
+                    const toc_list = toc.querySelector('ul')
+                    toc_list.appendChild(tocElement)
+                    console.log("Add heading:", data)
+                } else if (data["markup"] == "summary") {
+                    //console.log("Add summary:",start,end,data.seq)
+                    show_summary(wMarkup, data.seq, start, end, action);
+                } else if (data["markup"] == "postedited") {
+                    const compressionRate = data.sender.split(':')[1].split('_')[0];
+                    const relevantChapter = findRelevantChapter(wMarkup, data.start);
+
+                    const spk = get_spk(data)
+
+                    createOrUpdatePostEditedContent(
+                        relevantChapter,
+                        compressionRate,
+                        data.seq,
+                        data.start,
+                        data.end,
+                        spk
+                    );
+
+                    relevantChapter.setAttribute("postedited", 1);
+                    relevantChapter.setAttribute(`postedited-${compressionRate}`, 1);
+                    updateToggleButton(relevantChapter);
+                }
+            } else {
+                if (!("markup" in data) || data["markup"] == "paragraphBreak") {
+                    if (data["markup"] == "paragraphBreak") {
+                        //console.log("Stable Paragraph Break")
+                        //console.log(data)
+                    }
+                    unstable = document.getElementById(`unstable-` + sender_id)
+                    if (unstable != null) {
+                        unstable.style.display = "inline"
+                        unstable.innerHTML = data.seq
+                        w.appendChild(unstable);
+
+                    } else {
+                        unstable = document.createElement("div");
+                        unstable.style.display = "inline"
+                        unstable.style.color = "grey";
+                        unstable.id = `unstable-` + sender_id; // Set the ID of the new element
+                        unstable.innerHTML = data.seq
+                        w.appendChild(unstable);
+                    }
+                    unstable = document.getElementById(`unstable-structured` + sender_id)
+                    if (unstable != null) {
+                        unstable.style.display = "inline"
+                        unstable.innerHTML = data.seq
+                        const field = wMarkup.querySelectorAll(`.text-original`)
+                        field[field.length - 1].appendChild(unstable);
+
+                    } else {
+                        unstable = document.createElement("div");
+                        unstable.style.display = "inline"
+                        unstable.style.color = "grey";
+                        unstable.id = `unstable-structured` + sender_id; // Set the ID of the new element
+                        unstable.innerHTML = data.seq
+                        const field = wMarkup.querySelectorAll(`.text-original`)
+                        field[field.length - 1].appendChild(unstable);
+                    }
+                }
+            }
+
+            if (scrolling && wAtBottom && action !== "replace" && action !== "remove") {
+                //console.log("SCROLL");
+                w.scrollTop = w.scrollHeight;
+            }
+
+            if (scrolling && wMarkupAtBottom && action !== "replace" && action !== "remove") {
+                wMarkup.scrollTop = wMarkup.scrollHeight;
+            }
+
+        } else if ((data["sender"].startsWith("lip")) || (data["sender"].startsWith("tts"))) {
+            const name = data["sender"].replace(/:/g, "_");
+            console.log('TTS: ', data)
+            //const w_ttsnotice = document.getElementById(`ttsnotice-` + lang_id)
+            if (data.hasOwnProperty("b64_enc_video") && w.innerHTML.trim() === "") {
+                //w_ttsnotice.style.visibility = 'hidden';
+                w.innerHTML = "<iframe id=\"video-iframe-" + lang_id.toString() + "\" width=\"560\" height=\"305\" src=\"/webapi/stream/video/session_{{ session }}_" + name + ".html?player_id=" + lang_id.toString() + "\"></iframe>";
+                // w.innerHTML = "<iframe id=\"video-iframe-"+lang_id.toString()+"\" width=\"560\" height=\"305\" src=\"/webapi/stream/video/session_{{ session }}_" + name + ".html\"></iframe>";
+            }
+            /*if ('seq' in data && data['seq']==="######" && w_ttsnotice.style.visibility==='hidden') {
+                console.log("TTS waiting for Text Input...")
+                w_ttsnotice.style.visibility = 'visible';
+            }*/
+        } else if ("controll" in data && data["controll"] === "CLEAR") {
+            unstable = document.getElementById(`unstable-` + sender_id)
+            if (unstable != null) {
+                unstable.display = "none"
+            }
+            w.innerHTML = ""
+            clearMarkupWindow(lang_id)
+        } else if ("memory_words" in data) {
+            var memory_button = document.getElementById('update_memory');
+            var memory = document.getElementById("memory");
+            var extract_button = document.getElementById('extract_memory');
+            memory.value = data["memory_words"].join("\n");
+            memory_button.disabled = false;
+            extract_button.disabled = false;
+        } //till here
+    }
+
+    function clearMarkupWindow(index) {
+        const wMarkup = document.getElementById(`window-content-structured-` + index);
+        wMarkup.innerHTML = "";
+        createChapterElement(index, 0, 0)
+        const toc = document.getElementById(`toc-` + index)
+        const toc_list = toc.querySelector('ul')
+        toc_list.innerHTML = "";
+    }
+
+    // Function to close a window
+    function closeWindowNotViaButton(index) {
+        // numberOfWindows = numberOfWindows - 1
+        // updateWindowWidth();
+        id = index.replace("window-", "")
+        // console.log("ID:", id)
+        for (worker in sender_ids) {
+            if (lang_index[sender[worker]] == id) {
+                console.log("Try closing:", worker, sender[worker])
+                console.log("Reset")
+                sender_ids[worker] = -1;
+            }
+        }
+        var element = document.getElementById(index);
+        console.log('element to delete', element)
+        element.remove();
+    }
+
+    // Function to mute an audio player
+    function muteControlAudioPlayer(index, isMuted) {
+        const iframe = document.getElementById(index);
+        console.log('iframe: ', iframe)
+        if (iframe != null) {
+            // Send a message to the iframe to mute/unmute
+            iframe.contentWindow.postMessage({ action: 'setMute', muted: isMuted }, '*');
+        }
+    }
+
+    // Function to close a window
+    function toggleToAudioButton(index, styles) {
+        var ttsButton = document.getElementById(index);
+        var icon = ttsButton.querySelector('i');
+        if (icon.classList.contains('fa-spinner')) {
+            icon.classList.remove('fa');
+            icon.classList.remove('fa-spinner');
+            icon.classList.remove('fa-spin');
+            // Add each style to the icon
+            styles.forEach(style => {
+                icon.classList.add(style);
+            });
+        } else if (icon.classList.contains('fa-pause')) {
+            icon.classList.remove('fa-pause');
+            icon.classList.remove('fas');
+            // Add each style to the icon
+            styles.forEach(style => {
+                icon.classList.add(style);
+            });
+        } else {
+            icon.classList.remove('fa-play');
+            icon.classList.remove('fas');
+            // Add each style to the icon
+            styles.forEach(style => {
+                icon.classList.add(style);
+            });
+        }
+    }
+
+    // Function to close a window
+      function closeWindow(closeButton) {
+        if(closeButton.parentElement.parentElement.parentElement.style.display === "none") {
+            return;
+        }
+        closeButton.parentElement.parentElement.parentElement.style.display = "none";
+        numberOfWindows = numberOfWindows -1;
+        updateWindowWidth();
+        {% if mode == "live" %}
+        lang_visible[lang_name[closeButton.parentElement.parentElement.parentElement.id.replace("window-", "")]] = 0;
+
+        if (window.matchMedia("(max-device-width: 767px)").matches) {
+            const mobilelsdialog = document.getElementById('LanguageSelectionDialog');
+            mobilelsdialog.style.display = 'block';
+        } 
+        {% endif %}
+      }
+/*
+    // Function to close a window
+    function closeWindow(closeButton) {
+        numberOfWindows = numberOfWindows - 1
+        //console.log("Number of windows:",numberOfWindows)
+        updateWindowWidth();
+
+        id = closeButton.parentElement.parentElement.parentElement.id.replace("window-", "")
+        console.log("ID:", id)
+        for (worker in sender_ids) {
+            console.log("Check:", worker, sender[worker])
+            if (lang_index[sender[worker]] == id) {
+                console.log("Reset")
+                sender_ids[worker] = -1;
+            }
+        }
+
+        if (closeButton.classList.contains("close2-button")) {
+            closeButton.parentElement.parentElement.parentElement.remove();
+        } else { // close the memory window
+            memoryWindowOpen = 0;
+            closeButton.parentElement.parentElement.remove();
+        }
+
+        audio_id = lang_index[lang_name[id] + " Audio"]
+        //console.log("when closing the text window check also the audio: ", audio_id)
+        muteControlAudioPlayer('video-iframe-' + audio_id, true)
+        //closeWindowNotViaButton(audio_id)
+    }
+*/
+    function show_text(w, seq, start, end, type = 'span', action = "add", spk = undefined, additionalClasses = []) {
+        //console.log("Show text:", seq, start, end, type, action)
+
+        const spans = w.getElementsByTagName('span');
+
+        if (action === 'remove') {
+            for (let i = 0; i < spans.length; i++) {
+                if (parseFloat(spans[i].getAttribute("start")) === start && parseFloat(spans[i].getAttribute("end")) === end) {
+                    spans[i].remove();
+                    return;
+                }
+            }
+            return;
+        } else if (action === 'replace') {
+            if (isMouseDown) {
+                let show_text_arguments = {
+                    w: w,
+                    seq: seq,
+                    start: start,
+                    end: end,
+                    type: type,
+                    action: action,
+                    spk: spk,
+                    additionalClasses: additionalClasses
+                };
+                bufferedReplaceActions.push(show_text_arguments);
+                return;
+            }
+            const spans = w.getElementsByTagName('span');
+            for (let i = 0; i < spans.length; i++) {
+                if (parseFloat(spans[i].getAttribute("start")) === start && parseFloat(spans[i].getAttribute("end")) === end) {
+                    const regex_span_highlight = /<span-highlight>/;
+                    if (regex_span_highlight.test(seq)) {
+                        document.getSelection().removeAllRanges();
+                    }
+                    spans[i].innerHTML = seq + " ";
+                    return;
+                }
+            }
+        }
+
+        const newSpan = document.createElement(type)
+        newSpan.innerHTML = seq
+        newSpan.setAttribute("start", start)
+        newSpan.setAttribute("end", end)
+        newSpan.setAttribute("speaker-title", spk)
+        additionalClasses.forEach(c => newSpan.classList.add(c));
+
+        if (newSpan.innerHTML.trim() === "") {
+            return;
+        }
+
+        var l = spans.length;
+        if (l == 0) {
+            w.appendChild(newSpan)
+        } else {
+            last = 0
+            for (var i = 0; i < l; i++) {
+                if (parseFloat(spans[i].getAttribute("start")) < start) {
+                    last = i;
+                }
+            }
+            spans[last].after(newSpan)
+        }
+        return newSpan;
+    }
+
+    function remove_reduntant_speaker_tag(w) {
+        // find all div that has class name is chapter
+        const allChapters = w.querySelectorAll('div.chapter');
+
+        // For each chapter, find all span that contain speaker-title
+        for (let i_chapter = 0; i_chapter < allChapters.length; i_chapter++) {
+            const chapter = allChapters[i_chapter];
+
+            // Skip the chapter that does not contain any speaker-title
+            if (chapter.querySelectorAll('span[speaker-title]:not([speaker-title="undefined"])').length === 0) {
+                continue;
+            }
+
+            // find all span that contain speaker-title
+            const speakerTagsRedunt = chapter.querySelectorAll('span[speaker-title]');
+            // remove all speaker title that not need
+            for (let i = 0; i < speakerTagsRedunt.length - 1; i++) {
+                if (speakerTagsRedunt[i].getAttribute('speaker-tag') != null && speakerTagsRedunt[i + 1].getAttribute('speaker-tag') != null) {
+                    // remove the redundant speaker tag
+                    speakerTagsRedunt[i].remove();
+                }
+            }
+        }
+    }
+
+    function update_speaker_tag(w) {
+        // find all div that has class name is chapter
+        const allChapters = w.querySelectorAll('div.chapter');
+
+        // For each chapter, update speaker tags for both original and post-edited sections
+        for (let i_chapter = 0; i_chapter < allChapters.length; i_chapter++) {
+            const chapter = allChapters[i_chapter];
+            updateSpeakerTagsForSection(chapter);
+        }
+    }
+
+    function updateSpeakerTagsForSection(chapter) {
+        const sections = [
+            chapter.querySelector('.text-original'),
+            chapter.querySelector('.text-post-90'),
+            chapter.querySelector('.text-post-70'),
+            chapter.querySelector('.text-post-50')
+        ].filter(Boolean);
+
+        let globalFirstSpeaker = null;
+
+        sections.forEach((section, index) => {
+            if (!section) return;
+
+            // Remove all existing speaker tags
+            section.querySelectorAll('span[speaker-tag]').forEach(tag => tag.remove());
+
+            const spans = section.querySelectorAll('span[start]');
+            let currentSpeaker = null;
+
+            spans.forEach((span, spanIndex) => {
+                const speakerTitle = span.getAttribute('speaker-title');
+                if (!speakerTitle || speakerTitle === 'undefined') return;
+
+                if (index === 0 && spanIndex === 0) {
+                    globalFirstSpeaker = speakerTitle;
+                }
+
+                if (speakerTitle !== currentSpeaker) {
+                    const newSpan = document.createElement('span');
+                    newSpan.setAttribute('speaker-tag', speakerTitle);
+                    newSpan.setAttribute('speaker-title', speakerTitle);
+
+                    const displayTitle = speakerTitle.startsWith("Anonymous-") ? "Unknown" : speakerTitle;
+                    newSpan.innerHTML = `<br/><div class="speaker-tag" speaker-title="${speakerTitle}" speaker-title-display="${displayTitle}"></div>`;
+
+                    span.before(newSpan);
+                    currentSpeaker = speakerTitle;
+                }
+            });
+
+            if (globalFirstSpeaker && spans.length > 0) {
+                const firstSpan = spans[0];
+                const existingTag = firstSpan.previousElementSibling;
+                if (!existingTag || !existingTag.hasAttribute('speaker-tag')) {
+                    const newSpan = document.createElement('span');
+                    newSpan.setAttribute('speaker-tag', globalFirstSpeaker);
+                    newSpan.setAttribute('speaker-title', globalFirstSpeaker);
+
+                    const displayTitle = globalFirstSpeaker.startsWith("Anonymous-") ? "Unknown" : globalFirstSpeaker;
+                    newSpan.innerHTML = `<div class="speaker-tag" speaker-title="${globalFirstSpeaker}" speaker-title-display="${displayTitle}"></div>`;
+
+                    firstSpan.before(newSpan);
+                }
+            }
+        });
+    }
+
+    function add_selecting_word_action(w) {
+        if (w === null) {
+            return;
+        }
+
+        if (document.getElementById('turn-setting') === null) {
+            return;
+        }
+
+        const words = w.querySelectorAll('.word');
+        words.forEach(word => {
+            if (word.eventListenersAdded) {
+                return;
+            }
+
+            //console.log("Adding selecting word action", word)
+            word.addEventListener('mouseover', () => {
+                if (!highlightedWord) {
+                    word.classList.add('highlight');
+                }
+            });
+            word.addEventListener('mouseout', () => {
+                if (!highlightedWord || highlightedWord !== word) {
+                    word.classList.remove('highlight');
+                }
+            });
+            word.addEventListener('contextmenu', (event) => {
+                const turnSettingWindow = document.getElementById('turn-setting');
+                event.preventDefault();
+                const wordOrder = word.getAttribute('word-order');
+                const text = word.innerText;
+                const session_id = word.getAttribute('word-session-id');
+                const stream_id = word.getAttribute('word-stream-id');
+                const all_words = Array.from(document.querySelectorAll('.word')).filter(word => {
+                    const wordSessionId = word.getAttribute('word-session-id');
+                    const wordStreamId = word.getAttribute('word-stream-id');
+                    return wordSessionId === session_id && wordStreamId === stream_id;
+                });
+                const word_order = Array.from(all_words).map(word => word.getAttribute('word-order'));
+                const minOrder = Math.min(...word_order);
+                const maxOrder = Math.max(...word_order);
+                const all_word_order = [minOrder, maxOrder];
+                const profile_id = "{{ profile_id }}";
+                turnSettingWindow.style.display = 'block';
+
+                const wordPosition = word.getBoundingClientRect();
+                const turnSettingWindowHeight = 350;
+                const turnSettingWindowWidth = 600;
+                const top = Math.min(wordPosition.top, window.innerHeight - turnSettingWindowHeight);
+                turnSettingWindow.style.top = `${top}px`;
+                turnSettingWindow.style.left = `${wordPosition.left}px`;
+                turnSettingWindow.style.height = `${turnSettingWindowHeight}px`;
+                turnSettingWindow.style.width = `${turnSettingWindowWidth}px`;
+
+                // Remove highlight from previously highlighted word
+                if (highlightedWord) {
+                    highlightedWord.classList.remove('highlight');
+                }
+
+                highlightedWord = word;
+                word.classList.add('highlight');
+
+                // Send message to iframe
+                turnSettingWindow.contentWindow.postMessage({ text, wordOrder, session_id, stream_id, all_word_order, profile_id }, '*');
+            });
+            word.eventListenersAdded = true;
+        });
+    }
+
+    function findRelevantChapter(w, start) {
+        const chapters = w.querySelectorAll('.chapter');
+        let i = 1;
+        while (i < chapters.length && parseFloat(chapters[i].getAttribute("start")) < start) {
+            i++;
+        }
+        return chapters[i - 1];
+    }
+
+    function insertParagraphBreakIntoAllRates(chapterElement, start, end, lang_id) {
+        const textPost = chapterElement.querySelector('.text-post');
+        if (!textPost) return;
+
+        const compressionRates = ['90', '70', '50'];
+        compressionRates.forEach(rate => {
+            const rateDiv = textPost.querySelector(`.text-post-${rate}`);
+            if (rateDiv) {
+                show_text(rateDiv, '<br /><br />', start, end, 'span', "add", undefined, ['paragraph-break']);
+            }
+        });
+    }
+
+
+    function createOrUpdatePostEditedContent(chapterElement, compressionRate, content, start, end, speakerTitle, type = 'span', additionalClasses = []) {
+        let textPost = chapterElement.querySelector('.text-post');
+        if (!textPost) {
+            textPost = document.createElement("div");
+            textPost.className = "text-post";
+            chapterElement.querySelector('.text-div').appendChild(textPost);
+        }
+
+        let rateDiv = textPost.querySelector(`.text-post-${compressionRate}`);
+        if (!rateDiv) {
+            rateDiv = document.createElement("div");
+            rateDiv.className = `text-post-${compressionRate}`;
+            rateDiv.style.display = "none";
+            textPost.appendChild(rateDiv);
+        }
+
+        const newSpan = show_text(rateDiv, content, start, end, type, "add", speakerTitle, additionalClasses);
+
+        updateSpeakerTagsForSection(chapterElement);
+
+        return newSpan;
+    }
+
+    function show_markup_text(w, seq, start, end, language, action = "add", spk = undefined, additionalClasses = []) {
+
+        chapters = w.querySelectorAll('.chapter')
+        //console.log("Number of chapters:",chapters.length)
+        i = 1
+        while (i < chapters.length && parseFloat(chapters[i].getAttribute("start")) < start) {
+            i++;
+        }
+        show_text(chapters[i - 1].querySelector('.text-original'), seq, start, end, ...[,], action, spk, additionalClasses);
+    }
+
+    function updateToggleButton(chapterElement) {
+        const readTextButton = chapterElement.querySelector('.read-text-button');
+        const toggleTextButton = chapterElement.querySelector('.toggle-text-button');
+        const compressionRates = Array.from(chapterElement.querySelectorAll('.text-post > div'))
+            .map(el => el.className.replace('text-post-', ''))
+            .sort((a, b) => parseInt(b) - parseInt(a));
+
+        toggleTextButton.setAttribute('data-compression-rates', JSON.stringify(['100', ...compressionRates]));
+        toggleTextButton.style.display = readTextButton.textContent === "Show" ? "none" : "inline-block";
+
+        if (!toggleTextButton.querySelector('.compression-type')) {
+            toggleTextButton.innerHTML = '<span class="compression-type">Original</span><span class="compression-value">100%</span>';
+        }
+    }
+
+
+    document.addEventListener('click', (event) => {
+        // Only remove the highlights if the click is outside the highlighted elements
+        const isClickInsideHighlighted = event.target.closest('.highlighted');
+        const isClickInsideSummary = event.target.closest('.summary');
+
+        if (!isClickInsideHighlighted && !isClickInsideSummary) {
+            removeSummaryHighlights();
+        }
+        hideTurnSetting();
+    });
+
+    function hideTurnSetting() {
+        const turnSettingWindow = document.getElementById('turn-setting');
+        // if (turnSettingWindow != null && !turnSettingWindow.contains(event.target)) {
+        if (turnSettingWindow != null) {
+            turnSettingWindow.style.display = 'none';
+            if (highlightedWord) {
+                highlightedWord.classList.remove('highlight');
+                highlightedWord = null;
+            }
+        }
+    }
+
+    function extractSpansForChapter(chapter) {
+        if (!chapter) {
+            console.error(`Chapter with index ${index} not found.`);
+            return [];
+        }
+
+        // Select all the span elements within the chapter element
+        const spans = chapter.querySelectorAll('.text .text-original span.markup_transcript');
+
+        // Map the spans to an array of objects
+        const spanObjects = Array.from(spans).map(span => {
+            return {
+                text: span.textContent,
+                start: parseFloat(span.getAttribute('start')),
+                end: parseFloat(span.getAttribute('end'))
+            };
+        });
+
+        return spanObjects;
+    }
+
+    function removeSummaryHighlights() {
+        Array.from(document.querySelectorAll('.highlighted')).forEach(
+            (el) => el.classList.remove('highlighted')
+        );
+    }
+
+    function fetchSummaryLinks(data) {
+        return fetch('{{ url_for("get_summary_links") }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data),
+        })
+    }
+
+    function highlightSummaryLinks(chapter, links, summary_item) {
+        summary_item.classList.add('highlighted');
+
+        let first_start_span = null;
+        links.forEach(link => {
+            const { start, end, score } = link;
+            if (score == 0) {
+                return;
+            }
+
+            // highlight each link with background color
+            // find the span elements that correspond to the start and end times
+            const spans = chapter.querySelectorAll('.text .text-original span');
+            // consider that the spans are sorted by start time and that link's start and end times don't necessarily match the spans' start and end times
+            let startSpan = null;
+            let endSpan = null;
+            let withinSpans = [];
+            for (let j = 0; j < spans.length; j++) {
+                const span = spans[j];
+                const spanStart = parseFloat(span.getAttribute('start'));
+                const spanEnd = parseFloat(span.getAttribute('end'));
+
+                // exact match or starts before and ends after start
+                if (spanStart <= start && spanEnd >= start) {
+                    startSpan = span;
+                }
+
+                // exact match or starts before the end and ends after or at the end
+                if (spanStart <= end && spanEnd >= end) {
+                    endSpan = span;
+                }
+
+                if (startSpan && !endSpan) {
+                    withinSpans.push(span);
+                }
+            }
+
+            // highlight the spans
+            if (startSpan && endSpan) {
+                [startSpan, endSpan, ...withinSpans].forEach(span => {
+                    span.classList.add('highlighted');
+                });
+            }
+
+            if (first_start_span == null && startSpan != null) {
+                //console.log("Set first start span");
+                first_start_span = startSpan;
+            }
+
+        });
+
+        //console.log(first_start_span);
+        if (first_start_span != null) {
+            document.ignoreTimeUpdate = true;
+            const media = document.getElementById("media");
+            if (media) {
+                media.currentTime = parseFloat(first_start_span.getAttribute("start"));
+            }
+            setTimeout(() => { document.ignoreTimeUpdate = false; }, 7500);
+
+            let element = first_start_span
+            let container = element.closest('.window-content-structured');
+
+            // Calculate the scroll position to center the element vertically within the container
+            let containerTop = container.getBoundingClientRect().top;
+            let elementTop = element.getBoundingClientRect().top;
+            let offset = elementTop - containerTop - (container.clientHeight - element.clientHeight) / 2;
+
+            // Scroll the container to the calculated position
+            container.scrollTo({
+                top: container.scrollTop + offset,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    
+
+    function createTocElement(headline, elementToJumpTo) {
+        const tocElement = document.createElement('li')
+        const tocLink = document.createElement('a')
+        tocLink.textContent = headline
+        tocLink.href = "#"
+        tocLink.onclick = () => {
+            let element = elementToJumpTo
+            let container = element.closest('.window-content-structured');
+            let containerTop = container.getBoundingClientRect().top;
+            let elementTop = element.getBoundingClientRect().top;
+            let offset = elementTop - containerTop - (container.clientHeight - element.clientHeight) / 2;
+            container.scrollTo({
+                top: container.scrollTop + offset,
+                behavior: 'smooth'
+            });
+        }
+        tocElement.appendChild(tocLink)
+        return tocElement
+    }
+
+    function show_summary(window, seq, start, end, action = "add") {
+
+        chapters = window.querySelectorAll('.chapter')
+        let i = 1
+        while (i < chapters.length && parseFloat(chapters[i].getAttribute("start")) < start) {
+            i++;
+        }
+        const chapter = chapters[i - 1]
+        const summary_item = show_text(chapter.querySelector('.summary'), applyMD(seq.trim()), start, end, 'li', action);
+        chapter.querySelector(".expand-button").style.display = "block"
+
+        summary_item.addEventListener('click', () => {
+            removeSummaryHighlights();
+
+            console.log("Clicked on a summary");
+            const segment_texts = extractSpansForChapter(chapter)
+            console.log(segment_texts);
+
+            const summaryText = summary_item.textContent;
+            console.log("Summary text:", summaryText);
+
+            data = {
+                "segment_texts": segment_texts,
+                "summary_text": summaryText
+            }
+
+            fetchSummaryLinks(data)
+                .then(response => response.json())
+                .then(data => {
+                    const links = data.links;
+                    console.log("Links:", links);
+                    highlightSummaryLinks(chapter, links, summary_item);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+    }
+
+    function addChapterHeading(w, seq, start, end, old = false) {
+        const chapters = w.querySelectorAll('.chapter');
+        let i = 1;
+        while (i < chapters.length && parseFloat(chapters[i].getAttribute("start")) < start) {
+            i++;
+        }
+
+        //console.log(chapters.length);
+
+        const title = chapters[i - 1].querySelector('.chapter-title-text');
+
+        if (old) {
+            title.innerHTML += seq
+        } else {
+            const existingText = title.innerHTML;
+            const newText = existingText + seq;
+            let index = existingText.length;
+
+            function appendCharacter() {
+                if (index < newText.length) {
+                    title.innerHTML += newText.charAt(index);
+                    index++;
+                    setTimeout(appendCharacter, 20);
+                }
+            }
+
+            appendCharacter();
+
+        }
+    }
+
+
+    function updateAllWindows() {
+        for (let i = 0; i < Object.keys(lang_index).length; i++) {
+            console.log("Interation",i+1);
+            updateWindowContent(String(i+1));
+        }
+    }
+
+    // Function to update the window content
+    function updateWindowContent(index) {
+        //const content = document.getElementById(`window-content-${index}`);
+        //content.innerHTML = ``;
+
+
+        const request = new XMLHttpRequest();
+        //const stream = data.sender.split(":")[1]
+        request.open('POST', 'https://{{ domain }}{{ server }}/{{ session }}/getgraph', false);  // `false` makes the request synchronous
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        request.send();
+
+        graph = JSON.parse(request.responseText)
+        for (var worker in graph) {
+            if (graph[worker].includes("api")) {
+                const stream = worker.split(":")[1]
+                if (!sender[worker]) {
+                    request.open('POST', 'https://{{ domain }}{{ server }}/{{ session }}/' + stream + '/get_output_language_component', false);  // `false` makes the request synchronous
+                    request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    request.send(JSON.stringify(JSON.stringify({ "component": worker })));
+                    sender[worker] = request.responseText
+                }
+                if (lang_index[sender[worker]] == index) {
+                    sender_number[worker] = Object.keys(sender).length
+                    get_previous_messages(worker);
+                }
+            }
+        }
+
+
+        //const request = new XMLHttpRequest();
+        //const stream = data.sender.split(":")[1]
+        //request.open('POST', 'https://{{ domain }}{{ server }}/{{ session }}/'+stream+'/get_output_language_component', false);  // `false` makes the request synchronous
+        //request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        //request.send(JSON.stringify(JSON.stringify({ "component": data.sender})));
+
+        //sender[data.sender] = request.responseText
+        //sender_number[data.sender] = Object.keys(sender).length
+
+    }
+
+    function get_previous_messages(worker) {
+
+        if (!(worker in sender_ids)) {
+            sender_ids[worker] = -1;
+        }
+        //First message for this language, but there have been previous languages
+        const request = new XMLHttpRequest();
+        request.open('POST', 'https://{{ domain }}{{ server }}/{{ session }}/get_previous_messages', false);  // `false` makes the request synchronous
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        request.send(JSON.stringify(JSON.stringify({ "component": worker, "begin": sender_ids[worker] + 1 })));
+        //console.log("Request list:",JSON.stringify(JSON.stringify({ "component": worker,"begin":sender_ids[worker] + 1})))
+        //console.log(request.responseText)
+        var messages = JSON.parse(request.responseText)
+        const window = document.getElementById(`window-` + lang_index[sender[worker]])
+        const dis = window.style.display;
+        window.style.display = "none";
+        messages.forEach(function (item, index) {
+            old_data = JSON.parse(item)
+            //console.log("Index:",lang_index[sender[worker]])
+            w = document.getElementById(`window-content-` + lang_index[sender[worker]])
+            //console.log("Window:",w)
+            if (w != null) {
+                //console.log("Unstable",old_data.unstable)
+                if (!("unstable" in old_data) || old_data.unstable == false || old_data.controll == "START") {
+                    //console.log("Add messasge")
+                    addMessage(lang_index[sender[old_data.sender]], old_data, sender[old_data.sender], old = true);
+                }
+            }
+            sender_ids[worker] = parseInt(old_data["message_id"])
+
+        });
+        window.style.display = dis;
+
+    }
+
+    function toggleView(index, button) {
+        //console.log(index)
+        const content = document.getElementById(`window-content-${index}`);
+        //console.log(`window-content-${index}`)
+        //console.log(content)
+
+        const contentStructured = document.getElementById(`window-content-structured-${index}`);
+        button.textContent = button.textContent === "Show Markup" ? "Show Plain" : "Show Markup";
+        content.style.display = button.textContent === "Show Markup" ? "block" : "none"
+        contentStructured.style.display = button.textContent === "Show Plain" ? "block" : "none"
+
+
+        {% if mode == "archive" %}
+
+        if (button.textContent == "Show Markup") {
+            langType[index] = "plain_transcript"
+            langWindow[index] = document.getElementById(`window-content-${index}`)
+        } else {
+            langType[index] = "markup_transcript"
+            langWindow[index] = document.getElementById(`window-content-structured-${index}`)
+        }
+        langText[index] = langWindow[index].getElementsByClassName(langType[index])[0]
+        langIndex[index] = 0
+
+        {% endif %}
+
+    }
+
+    // Function to create a chapter element
+    function createChapterElement(language, index, start) {
+        const chapterDiv = document.createElement("div");
+        chapterDiv.className = "chapter";
+        chapterDiv.setAttribute("start", start)
+        chapterDiv.setAttribute("index", index)
+        chapterDiv.setAttribute("postedited", 0)
+
+        const chapterHeader = document.createElement("div");
+        chapterHeader.className = "chapter-header";
+        chapterDiv.appendChild(chapterHeader);
+
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "chapter-title";
+        titleDiv.innerHTML = `<span class="chapter-title-text"></span>`;
+        const display_index = index + 1;
+        titleDiv.setAttribute('data-chapter-number', display_index);
+        if (display_index.toString().length > 1) {
+            titleDiv.style.paddingLeft = '1.75em';
+        }
+        chapterHeader.appendChild(titleDiv);
+
+        const buttonsContainer = document.createElement("div");
+        buttonsContainer.className = "chapter-buttons-container";
+
+        const toggleTextButton = document.createElement("button");
+        toggleTextButton.className = "toggle-text-button";
+        toggleTextButton.innerHTML = '<span class="compression-type">Original</span><span class="compression-value">100%</span>';
+        toggleTextButton.setAttribute("onclick", `toggleTextVersion('${language}', ${index})`);
+        toggleTextButton.style.display = "none"; // Initially hidden
+        buttonsContainer.appendChild(toggleTextButton);
+
+        const readTextButton = document.createElement("button");
+        readTextButton.className = "read-text-button";
+        readTextButton.textContent = "Show";
+        readTextButton.setAttribute("onclick", `toggleText('${language}', ${index})`);
+        buttonsContainer.appendChild(readTextButton);
+
+
+        const expandButton = document.createElement("button");
+        expandButton.className = "expand-button";
+        expandButton.textContent = "[+]";
+        expandButton.setAttribute("onclick", `toggleSummary('${language}', ${index})`);
+        expandButton.style.display = "none";
+        buttonsContainer.appendChild(expandButton);
+
+        chapterHeader.appendChild(buttonsContainer);
+
+        const summaryDiv = document.createElement("div");
+        const summaryDiv2 = document.createElement("ul");
+        summaryDiv2.className = "summary";
+        summaryDiv.appendChild(summaryDiv2)
+        chapterDiv.appendChild(summaryDiv);
+
+        const textDiv = document.createElement("div");
+        textDiv.className = "text";
+        chapterDiv.appendChild(textDiv);
+
+        const textOrig = document.createElement("div");
+        textOrig.className = "text-original";
+        textDiv.appendChild(textOrig);
+
+        const textPost = document.createElement("div");
+        textPost.className = "text-post";
+        textPost.style.display = "block";
+        textDiv.appendChild(textPost);
+
+        // Create divs for different compression rates
+        const compressionRates = ['100', '90', '70', '50'];
+        compressionRates.forEach(rate => {
+            if (rate === '100') return;
+            const rateDiv = document.createElement("div");
+            rateDiv.className = `text-post-${rate}`;
+            rateDiv.style.display = "none"; // Initially hidden
+            textPost.appendChild(rateDiv);
+        });
+
+        toggleTextButton.setAttribute('data-compression-rates', JSON.stringify(compressionRates));
+
+
+        const content = document.getElementById(`window-content-structured-${language}`);
+        content.appendChild(chapterDiv)
+
+        if (index != 0) {
+            moveElements(start, content.querySelectorAll('.summary')[index - 1], summaryDiv2)
+            moveElements(start, content.querySelectorAll('.text-original')[index - 1], textOrig)
+
+            compressionRates.forEach(rate => {
+                const prevRateDiv = content.querySelectorAll('.chapter')[index - 1].querySelector(`.text-post-${rate}`);
+                const currentRateDiv = textPost.querySelector(`.text-post-${rate}`);
+                if (prevRateDiv && currentRateDiv) {
+                    moveElements(start, prevRateDiv, currentRateDiv);
+                }
+            });
+
+            chapters = content.querySelectorAll('.chapter')
+
+            if (chapters[index - 1].querySelector('.read-text-button').textContent == "Hide") {
+                toggleText(language, index - 1)
+            }
+
+            {% if mode == "live" %}
+            if (chapters[index].querySelector('.read-text-button').textContent == "Show") {
+                toggleText(language, index)
+            }
+            {% elif mode == "archive" %}
+            if (chapters[index].querySelector('.read-text-button').textContent == "Hide") {
+                toggleText(language, index)
+            }
+            {% endif %}
+
+            if (chapters[index].querySelector('.summary').hasChildNodes()) {
+                chapters[index].querySelector(".expand-button").style.display = "block"
+            }
+            if (chapters[index].querySelector('.text-post').hasChildNodes()) {
+                chapters[index].setAttribute("postedited", 1);
+                const readTextButtons = chapters[index].querySelector('.read-text-button');
+                const toggleTextButtons = chapters[index].querySelector('.toggle-text-button');
+                toggleTextButtons.style.display = readTextButtons.textContent === "Show" ? "none" : "inline-block";
+                chapters[index].querySelector('.text-post').style.display = "block";
+            }
+
+            {% if mode == "archive" %}
+        } else {
+            chapters = content.querySelectorAll('.chapter')
+            if (chapters[index].querySelector('.read-text-button').textContent == "Hide") {
+                toggleText(language, index)
+            }
+            {% endif %}
+
+        }
+
+    }
+
+
+    function moveElements(startTime, input, output) {
+        for (var i = input.children.length - 1; i >= 0; i--) {
+            child = input.children[i]
+            //console.log("Compare ",child.getAttribute("start")," ",parseFloat(startTime))
+            if (parseFloat(child.getAttribute("start")) > startTime) {
+                //console.log("Move elements with start time",child.getAttribute("start")," to chapter with start time",startTime)
+                input.removeChild(child)
+                output.prepend(child)
+            }
+        }
+    }
+
+    // Function to toggle the visibility of summary
+    function getFullWords(text, selectionStart, selectionEnd) {
+        let startIndex = selectionStart;
+        let endIndex = selectionEnd;
+
+        // Find the start of the first word
+        while (startIndex > 0 && !/\s/.test(text[startIndex - 1])) {
+            startIndex--;
+        }
+
+        // Find the end of the last word
+        while (endIndex < text.length && !/\s/.test(text[endIndex])) {
+            endIndex++;
+        }
+
+        return text.slice(startIndex, endIndex);
+    }
+
+    const global_bubble = document.createElement('div');
+    global_bubble.className = 'bubble';
+    document.body.appendChild(global_bubble);
+
+    function updateBubble(data, bubbleElement) {
+        const wikiLink = data.link;
+        bubbleElement.innerHTML = `<a href="${wikiLink}" target="_blank">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/Wikipedia%27s_W.svg" alt="Wikipedia" width="16" height="16" />
+            ${data.term}
+        </a>`;
+    }
+
+    function addWindowWikiSuggester(windowElement, language) {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        windowElement.appendChild(bubble);
+
+        console.log(language);
+        windowElement.addEventListener('mouseup', function (event) {
+            const selection = window.getSelection();
+            console.log("Wiki Select", selection);
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const selectedText = range.toString().trim();
+
+                console.log("Selected text:", selectedText)
+
+                if (selectedText) {
+                    const fullText = windowElement.textContent;
+
+                    console.log("Full text:", fullText);
+
+                    const preSelectionRange = range.cloneRange();
+                    preSelectionRange.selectNodeContents(windowElement);
+                    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+                    const start = preSelectionRange.toString().length;
+
+                    let fullWords = getFullWords(fullText, start, start + selectedText.length);
+                    fullWords = fullWords.replace(/[^a-zA-Z0-9\s]/g, '');
+
+                    if (fullWords.length > 300) {
+                        global_bubble.style.display = 'none';
+                        bubble.style.display = 'none';
+                        return;
+                    }
+
+                    fetchWikiLink(fullWords)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data);
+                            if (data.term) {
+                                updateBubble(data, bubble);
+                                updateBubble(data, global_bubble);
+
+                                // if fullscreen mode
+                                if (!document.fullscreenElement) {
+                                    global_bubble.style.display = 'block';
+                                    global_bubble.style.left = `${event.pageX}px`;
+                                    global_bubble.style.top = `${event.pageY + 20}px`;
+                                } else {
+                                    const rect = windowElement.getBoundingClientRect();
+                                    const scrollLeft = windowElement.scrollLeft || document.documentElement.scrollLeft;
+                                    const scrollTop = windowElement.scrollTop || document.documentElement.scrollTop;
+
+                                    const left = event.clientX - rect.left + scrollLeft;
+                                    const top = event.clientY - rect.top + scrollTop;
+
+                                    // Position the bubble
+                                    bubble.style.left = `${left}px`;
+                                    bubble.style.top = `${top + 12}px`;
+
+                                    // Ensure the bubble stays within the window element
+                                    const bubbleRect = bubble.getBoundingClientRect();
+                                    if (bubbleRect.right > rect.right) {
+                                        bubble.style.left = `${rect.width - bubbleRect.width}px`;
+                                    }
+                                    if (bubbleRect.bottom > rect.bottom) {
+                                        bubble.style.top = `${top - bubbleRect.height - 10}px`;
+                                    }
+                                    bubble.style.display = 'block';
+                                }
+                            } else {
+                                global_bubble.style.display = 'none';
+                                bubble.style.display = 'none';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                } else {
+                    bubble.style.display = 'none';
+                }
+            }
+        });
+
+        window.addEventListener('mousedown', function (event) {
+            if (event.target !== bubble && !bubble.contains(event.target) && event.target !== global_bubble && !global_bubble.contains(event.target)) {
+                bubble.style.display = 'none';
+                global_bubble.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            bubble.style.display = 'none';
+            global_bubble.style.display = 'none';
+        });
+
+        document.getElementById(`window-content-structured-${language}`).addEventListener('scroll', function () {
+            bubble.style.display = 'none';
+            global_bubble.style.display = 'none';
+        });
+    }
+
+    function fetchWikiLink(term) {
+        return fetch('{{ url_for("get_wiki_suggestion") }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ "term": term, "lang": "en" }),
+        })
+    }
+
+    function toggleSummary(language, index) {
+        const content = document.getElementById(`window-content-structured-${language}`);
+        const expandButton = content.querySelectorAll('.expand-button')[index];
+        const summary = content.querySelectorAll('.summary')[index];
+        expandButton.textContent = expandButton.textContent === "[+]" ? "[-]" : "[+]";
+        summary.style.display = expandButton.textContent === "[+]" ? "none" : "block";
+
+    }
+
+    // Function to toggle the visibility of text
+    function toggleText(language, index) {
+        const content = document.getElementById(`window-content-structured-${language}`);
+        const text = content.querySelectorAll('.text')[index];
+        const chapter = content.querySelectorAll('.chapter')[index];
+        const readTextButtons = content.querySelectorAll('.read-text-button')[index];
+        const toggleTextButtons = content.querySelectorAll('.toggle-text-button')[index];
+
+        readTextButtons.textContent = readTextButtons.textContent === "Show" ? "Hide" : "Show";
+        text.style.display = readTextButtons.textContent === "Show" ? "none" : "block";
+        if (chapter.getAttribute("postedited") == 1) {
+            toggleTextButtons.style.display = readTextButtons.textContent === "Show" ? "none" : "inline-block";
+        }
+    }
+
+    // Function to toggle between original and post-edited text
+    function toggleTextVersion(language, index) {
+        const content = document.getElementById(`window-content-structured-${language}`);
+        const chapter = content.querySelectorAll('.chapter')[index];
+        const toggleTextButton = chapter.querySelector('.toggle-text-button');
+        const compressionRates = JSON.parse(toggleTextButton.getAttribute('data-compression-rates'));
+
+        const compressionType = toggleTextButton.querySelector('.compression-type').textContent;
+        const compressionValue = toggleTextButton.querySelector('.compression-value').textContent;
+
+        let currentRate = compressionType === 'Original' ? '100' : compressionValue.replace('%', '');
+        let currentIndex = compressionRates.indexOf(currentRate);
+
+        const hasContent = (div) => div && div.textContent.trim().length > 0;
+
+        let newRate;
+        let newIndex;
+        for (let i = 1; i <= compressionRates.length; i++) {
+            newIndex = (currentIndex + i) % compressionRates.length;
+            newRate = compressionRates[newIndex];
+
+            if (newRate === '100' || hasContent(chapter.querySelector(`.text-post-${newRate}`))) {
+                break;
+            }
+        }
+
+        const newCompressionType = newRate === '100' ? 'Original' : 'Shortened';
+        const newCompressionValue = `${newRate}%`;
+
+        toggleTextButton.querySelector('.compression-type').textContent = newCompressionType;
+        toggleTextButton.querySelector('.compression-value').textContent = newCompressionValue;
+
+        chapter.querySelector('.text-original').style.display = "none";
+        chapter.querySelectorAll('.text-post > div').forEach(el => {
+            el.style.display = "none";
+        });
+
+        if (newRate === '100') {
+            chapter.querySelector('.text-original').style.display = "block";
+        } else {
+            const textPost = chapter.querySelector(`.text-post-${newRate}`);
+            if (textPost) {
+                textPost.style.display = "block";
+            }
+        }
+    }
+
+    function toggleFullScreen(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!document.fullscreenElement) {
+            // If no element is in full-screen, make this one full-screen
+            element.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            // If an element is in full-screen, exit full-screen
+            document.exitFullscreen().catch(err => {
+                console.error(`Error attempting to exit full-screen mode: ${err.message}`);
+            });
+        }
+    }
+
+    function updateWindowWidth() {
+
+        console.log("Update width with for ", numberOfWindows, "windows")
+        {% if mode == "archive" %}
+        if (orientation == "portrait") {
+
+            [...document.getElementsByClassName('window')].forEach(el => {
+                // Do something with each element
+                el.style.width = "95%"
+            })
+            return;
+        }
+        {% endif %}
+
+        if (numberOfWindows == 1) {
+            [...document.getElementsByClassName('window')].forEach(el => {
+                // Do something with each element
+                el.style.width = "95%"
+            })
+        } else {
+            [...document.getElementsByClassName('window')].forEach(el => {
+                // Do something with each element
+                el.style.width = "45%"
+            })
+        }
+    }
+
+    function updateAudioPlayer(audio_data_id, lang_id) {
+        var hlsjsConfig = {
+            "maxBufferSize": 10,
+            "maxBufferLength": 30,
+            "liveSyncDurationCount": 1
+        };
+        var hls = new Hls(hlsjsConfig);
+        console.log("audio language_name: ", lang_name[lang_id.toString()])
+        console.log("audio language_id: ", lang_id)
+        videoElement = document.getElementById('audioplayer-' + lang_id);
+        hls.loadSource('/webapi/stream/video/m3u8_{{ session }}_' + audio_data_id + '.m3u8');
+        hls.attachMedia(videoElement);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            var playPromise = videoElement.play();
+            if (playPromise !== undefined) {
+                playPromise.then(function () {
+                    console.log('Playback started automatically.');
+                    var duration = playPromise.duration;
+                    if (!isNaN(duration)) {
+                        // Seek to the duration minus a small buffer (e.g., 0.1 seconds) to ensure it reaches the end
+                        playPromise.currentTime = duration - 0.1;
+                    }
+                }).catch(function (error) {
+                    console.error('Auto-play was prevented:', error);
+                });
+            }
+        });
+        hls.on(Hls.Events.ERROR, function (event, data) {
+            console.error('HLS error occurred:', data);
+            // Handle the error (e.g., show error message to the user)
+        });
+    }
+
+
+    function applyMD(text) {
+        return marked.parseInline(text);
+
+    }
+</script>

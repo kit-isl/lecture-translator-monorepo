@@ -1,0 +1,14 @@
+{
+ "mt_server_en-de": "http://nllb-worker:5000/predictions/mt-en,de",
+ "mt_server_en-fr": "http://nllb-worker:5000/predictions/mt-en,fr",
+ "mt_server_en-es": "http://nllb-worker:5000/predictions/mt-en,es",
+ "mt_server_en-nl": "http://nllb-worker:5000/predictions/mt-en,nl",
+ "mt_server_en-pt": "http://nllb-worker:5000/predictions/mt-en,pt",
+ "mt_server_en-it": "http://nllb-worker:5000/predictions/mt-en,it",
+ "mt_server_de-en": "http://nllb-worker:5000/predictions/mt-de,en",
+ "mt_server_fr-en": "http://nllb-worker:5000/predictions/mt-fr,en",
+ "mt_server_es-en": "http://nllb-worker:5000/predictions/mt-es,en",
+ "mt_server_nl-en": "http://nllb-worker:5000/predictions/mt-nl,en",
+ "mt_server_pt-en": "http://nllb-worker:5000/predictions/mt-pt,en",
+ "mt_server_it-en": "http://nllb-worker:5000/predictions/mt-it,en"
+}

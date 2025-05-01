@@ -1,0 +1,61 @@
+version: "3.3"
+
+services:
+  nllb-worker:
+    image: registry.isl.iar.kit.edu/nllb-worker
+    build: ./inference/nllb-worker
+    volumes:
+      - 'huggingface_cache:/cache'
+    networks:
+      - LTPipeline
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment: 
+      CUDA_VISIBLE_DEVICES: ${CUDA_MT:-0}
+    restart: on-failure
+
+  deltalm-worker:
+    image: registry.isl.iar.kit.edu/lt-middleware/inference/ctranslate2-deltalm:4.5.0-cpu
+    networks:
+      - LTPipeline
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      CUDA_VISIBLE_DEVICES: ${CUDA_MT:-0}
+    restart: on-failure
+
+  whisper-worker:
+    image: registry.isl.iar.kit.edu/whisper-worker
+    build: ./inference/whisper-flask
+    volumes:
+      - 'huggingface_cache:/cache'
+    networks:
+      - LTPipeline
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment: 
+      CUDA_VISIBLE_DEVICES: ${CUDA_ASR:-0}
+    restart: on-failure
+
+#networks:
+#  LTPipeline:
+#    external: true
+#    name: "${COMPOSE_PROJECT_NAME:-ltpipeline}_LTPipeline"
+
+volumes:
+  huggingface_cache: {}

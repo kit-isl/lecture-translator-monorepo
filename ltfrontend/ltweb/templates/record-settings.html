@@ -1,0 +1,110 @@
+<div class="session-info" id="recordinfo">
+    Record short video (~10 seconds)<br><br>
+  <form action="{{ url_for('upload') }}" enctype="multipart/form-data" method="POST">
+    <div class="form-row" id="videoName">
+      <div class="form-column">
+        <label for="videoname">Video Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="videoname" name="videoname" placeholder="Your Video Name">
+      </div>
+    </div>
+    <div class="form-row" id="videoFile">
+      <div class="form-column">
+        <label>Video Recording</label>
+      </div>
+      <div class="form-column">
+          <button id="startButton" type="button">Access Camera</button>
+          <button id="recordButton" type="button" disabled>Record</button>
+          <button id="stopButton" type="button" disabled>Stop</button>
+          <video id="videoElement" width=350px></video>
+          <input type="hidden" id="video-data" name="videofile">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <button type="submit">Upload</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+    function byteArrayToBase64(byteArray) {
+      var binaryString = '';
+      for (var i = 0; i < byteArray.length; i++) {
+        binaryString += String.fromCharCode(byteArray[i]);
+      }
+      return btoa(binaryString);
+    }
+
+    var videoElement = document.getElementById('videoElement');
+    var startButton = document.getElementById('startButton');
+    var recordButton = document.getElementById('recordButton');
+    var stopButton = document.getElementById('stopButton');
+    var videoDataInput = document.getElementById('video-data');
+    let mediaRecorder;
+
+    startButton.addEventListener('click', function() {
+      startButton.disabled = true;
+      recordButton.disabled = false;
+      videoElement.style.display = 'block';
+
+      // Access the user's camera
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+          videoElement.srcObject = stream;
+          videoElement.play();
+        })
+        .catch(function(error) {
+          console.log('Error accessing camera: ', error);
+        });
+    });
+
+    recordButton.addEventListener('click', function() {
+      recordButton.disabled = true;
+      stopButton.disabled = false;
+
+      var chunks = [];
+      mediaRecorder = new MediaRecorder(videoElement.srcObject);
+
+      mediaRecorder.ondataavailable = function(event) {
+        chunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = function() {
+        var blob = new Blob(chunks, { 'type' : 'video/webm' });
+        chunks = [];
+
+        var reader = new FileReader();
+        reader.onload = function() {
+            var bytes = new Uint8Array(reader.result);
+            videoDataInput.value = byteArrayToBase64(bytes);
+        };
+        reader.readAsArrayBuffer(blob);
+      };
+
+      mediaRecorder.start(1000);
+    });
+
+    stopButton.addEventListener('click', function() {
+      stopButton.disabled = true;
+      startButton.disabled = false;
+      recordButton.disabled = true;
+
+      // Stop recording and close the camera
+      var stream = videoElement.srcObject;
+      var tracks = stream.getTracks();
+
+      tracks.forEach(function(track) {
+        track.stop();
+      });
+
+      videoElement.srcObject = null;
+
+      // Stop the media recorder if it's active
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    });
+</script>

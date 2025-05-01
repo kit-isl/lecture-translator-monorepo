@@ -1,0 +1,10 @@
+
+version: "3.3"
+
+services:
+  streamingtextstructurer:
+    volumes:
+      - ${PWD}/config_textstructurer.json:/src/config.json:ro
+  frontend:
+    environment:
+      PRESENTATION_MODE: "plain"

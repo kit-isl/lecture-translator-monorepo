@@ -1,0 +1,80 @@
+[submodule "loggingwoker"]
+	path = loggingwoker
+	url = ../loggingwoker.git
+	branch = main
+[submodule "lt_api"]
+	path = lt_api
+	url = ../lt_api.git
+	branch = main
+[submodule "qbmediator"]
+	path = qbmediator
+	url = ../qbmediator.git
+	branch = main
+[submodule "streamingasr"]
+	path = streamingasr
+	url = ../streamingasr.git
+	branch = main
+[submodule "streamingmt"]
+	path = streamingmt
+	url = ../streamingmt.git
+	branch = main
+[submodule "streamingprep"]
+	path = streamingprep
+	url = ../streamingprep.git
+	branch = master
+[submodule "bot"]
+	path = dialog/bot
+	url = ../bot.git
+	branch = main
+[submodule "lt-archive"]
+	path = lt-archive
+	url = ../lt-archive.git
+	branch = main
+[submodule "ltfrontend"]
+	path = ltfrontend
+	url = ../ltfrontend.git
+    	branch = main
+[submodule "streamingtextsegmenter"]
+	path = streamingtextsegmenter
+	url = ../streamingtextsegmenter.git
+	branch = master
+[submodule "lt_api_stream"]
+	path = lt_api_stream
+	url = ../lt_api_stream.git
+	branch = master
+[submodule "streamingtts"]
+	path = streamingtts
+	url = ../streamingtts.git
+    	branch = main
+[submodule "streaminglip"]
+	path = streaminglip
+	url = ../streaminglip.git
+    	branch = main
+[submodule "inference/nllb-worker"]
+	path = inference/nllb-worker
+	url = ../inference/nllb-worker.git
+    	branch = main
+[submodule "inference/whisper-flask"]
+	path = inference/whisper-flask
+	url = ../inference/whisper-flask.git
+    	branch = main
+[submodule "streamingtextstructurer"]
+	path = streamingtextstructurer
+	url = ../streamingtextstructurer.git
+    	branch = main
+[submodule "streamingsummarizer"]
+	path = streamingsummarizer
+	url = ../streamingsummarizer.git
+    	branch = main
+[submodule "streamingpostproduction"]
+	path = streamingpostproduction
+	url = ../streamingpostproduction.git
+    	branch = main
+[submodule "dialog/kitmeetingbutler"]
+	path = dialog/kitmeetingbutler
+	url = ../dialog/kitmeetingbutler.git
+    	branch = main
+[submodule "inference/ctranslate2-deltalm"]
+	path = inference/ctranslate2-deltalm
+	url = ../inference/ctranslate2-deltalm.git
+	branch = v4.5.0-deltalm

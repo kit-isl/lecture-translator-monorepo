@@ -1,0 +1,62 @@
+version: "3.3"
+
+services:
+  streamingerrorcorrection:
+    image: registry.isl.iar.kit.edu/streamingerrorcorrection
+    volumes:
+      - type: bind
+        source: /home/sconstantin/DatasetsDev
+        target: /data
+    build:
+      dockerfile: Dockerfile
+      context: streamingerrorcorrection
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: bash run_corrector.sh
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 1
+
+  streamingasrconfidences:
+    image: registry.isl.iar.kit.edu/streamingasrconfidences
+    build:
+      dockerfile: Dockerfile
+      context: streamingerrorcorrection
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamErrorCorrection.py --queue-server kafka --queue-port 9092 --redis-server redis --name asrConfidences
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 1
+
+  streamingerrorcorrectiontranscriptviewer:
+    image: registry.isl.iar.kit.edu/streamingerrorcorrectiontranscriptviewer
+    build:
+      dockerfile: Dockerfile
+      context: streamingerrorcorrection
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamErrorCorrection.py --queue-server kafka --queue-port 9092 --redis-server redis --name correctionTranscript
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 1
+
+  streamingerrorcorrectiongtviewer:
+    image: registry.isl.iar.kit.edu/streamingerrorcorrectiongtviewer
+    build:
+      dockerfile: Dockerfile
+      context: streamingerrorcorrection
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamErrorCorrection.py --queue-server kafka --queue-port 9092 --redis-server redis --name correctionGroundTruth
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 1

@@ -1,0 +1,5 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+fastapi
+redis
+uvicorn
+jinja2

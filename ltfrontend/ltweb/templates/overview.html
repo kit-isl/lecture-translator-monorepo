@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="'en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Available Sessions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  </head>
+  <body>
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+
+    <h1>Available Sessions</h1>
+    <div class="sessions">
+      {% for name, id,present in sessionList %}
+      <div class="session">
+        <div class="window-header">{{ name }}</div>
+        <a href="{{ url_for("session",id=id ) }}">Join</a>
+        {% if present == True %}
+        <a href="{{ url_for("present",id=id ) }}">Present</a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </body>
+</html>

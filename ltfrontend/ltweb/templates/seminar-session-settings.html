@@ -1,0 +1,65 @@
+<div class="session-info" id="seminarSession">
+  <form action="{{ url_for('create') }}" method="POST">
+
+
+    <div class="form-row">
+      <div class="form-column">
+        <label for="name" id="lectureName">Seminar Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="name" name="name" placeholder="New Seminar">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="legals" id="legalsName">Accept <a href="/terms">Terms of Service</a></label>
+      </div>
+      <div class="form-column">
+        <input type="checkbox" id="legals" name="legals" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <div class="advanced-options-toggle">
+          <button type="button" class="toggle-button" onclick="stoggleAdvancedOptions()">Advanced Options</button>
+        </div>
+      </div>
+    </div>
+
+    {%include 'advanced-session-settings.html' %}
+
+
+
+    <div class="form-row">
+      <div class="form-column">
+        <input type="hidden" value="meeting" name="type" id="type">
+        <input type="hidden" value="1" name="saasr" id="saasr">
+        <button type="submit">Start</button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+
+
+
+<script>
+
+  const ms = document.getElementById("seminarSession")
+  const sadvancedOptions = ms.querySelector(".advanced-options");
+  sadvancedOptions.style.display = "none";
+
+  function stoggleAdvancedOptions() {
+    var sadvancedOptions = ms.querySelector(".advanced-options");
+    var toggleButton = ms.querySelector(".toggle-button");
+    sadvancedOptions.classList.toggle("hidden");
+    if (sadvancedOptions.classList.contains("hidden")) {
+      toggleButton.innerText = "Advanced Options";
+      sadvancedOptions.style.display = "none";
+    } else {
+      toggleButton.innerText = "Hide Advanced Options";
+      sadvancedOptions.style.display = "block";
+    }
+  }
+</script>

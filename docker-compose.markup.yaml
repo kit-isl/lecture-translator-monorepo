@@ -1,0 +1,27 @@
+version: "3.3"
+
+services:
+  streamingsummarizer:
+    image: registry.isl.iar.kit.edu/streamingsummarizer
+    build:
+      dockerfile: Dockerfile
+      context: streamingsummarizer
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamSummarizer.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+  streamingpostproduction:
+    image: registry.isl.iar.kit.edu/streamingpostproduction
+    build:
+      dockerfile: Dockerfile
+      context: streamingpostproduction
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamPostProduction.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 10

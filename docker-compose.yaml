@@ -1,0 +1,383 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: 'traefik'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - './traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro'
+      - 'certs:/etc/traefik/acme'
+      - './traefik/auth/basicauth.txt:/basicauth.txt'
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    networks:
+      - LTPipeline
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.middlewares.basicauth.basicauth.usersFile=/basicauth.txt'
+      # Traefik dashboard
+      - 'traefik.http.routers.traefik.tls=true'
+      - 'traefik.http.routers.traefik.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.traefik.rule=Host(`${DOMAIN}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))'
+      - 'traefik.http.routers.traefik.service=api@internal'
+      - 'traefik.http.routers.traefik.middlewares=basicauth'
+    restart: 'unless-stopped'
+
+  dex:
+    image: dexidp/dex
+    user: 'root'
+    env_file:
+      ${DEX_FILES:-/var/local/traefik}/dex.env
+    environment:
+      DEX_BASE_URL: "https://${DOMAIN_PORT:-${DOMAIN}}"
+      TFA_CLIENT_SECRET: "${TFA_CLIENT_SECRET:-bar}"
+    volumes:
+      - ./traefik/auth/dex.yaml:/etc/dex/config.docker.yaml:ro
+      #- ./traefik/auth/dex.db:/var/sqlite/dex.db
+      - dex_data:/var/sqlite
+    networks:
+      - LTPipeline
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.dex.tls=true'
+      - 'traefik.http.routers.dex.tls.certresolver=letsencrypt'
+      - "traefik.http.routers.dex.rule=Host(`${DOMAIN}`) && PathPrefix(`/dex`)"
+      - "traefik.http.routers.dex.entrypoints=https"
+      - "traefik.http.services.dex.loadbalancer.server.port=5556"
+
+  traefik-forward-auth:
+    image: 'thomseddon/traefik-forward-auth:latest'
+    depends_on:
+      - traefik
+      - dex
+    command: '--config /auth-rules.ini'
+    environment:
+      LOG_LEVEL: 'debug'
+      DEFAULT_PROVIDER: oidc
+      SECRET: "${TFA_SIGNING_SECRET:-XFxy833ngUuK7BgIfIQcot3Jb3H8oHdXrCfTTBCne8E}"
+      PROVIDERS_OIDC_CLIENT_ID: traefik-forward-auth
+      PROVIDERS_OIDC_CLIENT_SECRET: "${TFA_CLIENT_SECRET:-bar}"
+      PROVIDERS_OIDC_ISSUER_URL: 'https://${DOMAIN_PORT:-${DOMAIN}}/dex'
+      LOGOUT_REDIRECT: 'https://${DOMAIN_PORT:-${DOMAIN}}/'
+      LIFETIME: 604800
+    volumes:
+      - './traefik/auth/rules.ini:/auth-rules.ini:ro'
+    networks:
+      - LTPipeline
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.middlewares.traefik-forward-auth.forwardauth.address=http://traefik-forward-auth:4181'
+      - 'traefik.http.middlewares.traefik-forward-auth.forwardauth.authResponseHeaders=X-Forwarded-User'
+      - 'traefik.http.services.traefik-forward-auth.loadbalancer.server.port=4181'
+      - 'traefik.http.middlewares.logout.replacepathregex.regex=^/logout$$'
+      - 'traefik.http.middlewares.logout.replacepathregex.replacement=/_oauth/logout'
+    restart: 'unless-stopped'
+
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    #ports:
+    #  - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - LTPipeline
+    restart: on-failure
+
+  kafka:
+    image: 'bitnami/kafka:3.9.0'
+    ports:
+      - '${MEDIATOR_PORT:-9093}:${MEDIATOR_PORT:-9093}'
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:${MEDIATOR_PORT:-9093}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:${MEDIATOR_PORT:-9093}
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_ENABLE_KRAFT="false"
+    depends_on:
+     - zookeeper
+    networks:
+      - LTPipeline
+    restart: on-failure
+
+  redis:
+    image: redis
+    volumes:
+      - 'redis_data:/data'
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    networks:
+      - LTPipeline
+    restart: on-failure
+
+  qbmediator:
+    image: registry.isl.iar.kit.edu/qbmediator
+    build: qbmediator
+    depends_on:
+      - redis
+      - kafka
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u mediator.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+
+  streamingmt:
+    image: registry.isl.iar.kit.edu/streamingmt
+    build: streamingmt
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamMT.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 25
+  streamingtts:
+    image: registry.isl.iar.kit.edu/streamingtts
+    build: streamingtts
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamTTS.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 10
+  streaminglip:
+    image: registry.isl.iar.kit.edu/streaminglip
+    build: streaminglip
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u  StreamLipSync.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+  streamingasr:
+    image: registry.isl.iar.kit.edu/streamingasr
+    build: streamingasr
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamASR.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 10
+  streamingtextsegmenter:
+    image: registry.isl.iar.kit.edu/streamingtextsegmenter
+    build: streamingtextsegmenter
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamTextSegmenter.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+
+  streamingtextstructurer:
+    image: registry.isl.iar.kit.edu/streamingtextstructurer
+    build:
+      dockerfile: Dockerfile
+      context: streamingtextstructurer
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    command: python -u StreamTextStructurer.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    restart: on-failure
+    deploy:
+        replicas: 10
+  streamingprep:
+    image: registry.isl.iar.kit.edu/streamingprep
+    build: streamingprep
+    depends_on:
+      - qbmediator
+    command: python -u StreamPrep.py --queue-server kafka --queue-port 9092 --redis-server redis
+    networks:
+      - LTPipeline
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+      - DEBUG='False'
+    restart: on-failure
+    # volumes:
+    #   - /src/cache:/home/mtasr/LT2.0/ltpipeline/streamingprep/audio
+  ltapi:
+    image: registry.isl.iar.kit.edu/ltapi
+    build: lt_api
+    depends_on:
+      - qbmediator
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+      - QUEUE_SERVER=kafka
+      - QUEUE_PORT=9092
+    networks:
+      - LTPipeline
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+
+      - 'traefik.http.services.ltapi.loadbalancer.server.port=5000'
+
+      - 'traefik.http.routers.ltapi.tls=true'
+      - 'traefik.http.routers.ltapi.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.ltapi.rule=Host(`${DOMAIN}`) && PathPrefix(`/ltapi`)'
+      - 'traefik.http.routers.ltapi.service=ltapi'
+      - 'traefik.http.routers.ltapi.middlewares=basicauth'
+
+      - 'traefik.http.routers.webapi.tls=true'
+      - 'traefik.http.routers.webapi.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.webapi.rule=Host(`${DOMAIN}`) && PathPrefix(`/webapi`)'
+      - 'traefik.http.routers.webapi.service=ltapi'
+      - 'traefik.http.routers.webapi.middlewares=webapi-compat,traefik-forward-auth'
+
+      - 'traefik.http.middlewares.webapi-compat.replacepathregex.regex=^/webapi'
+      - 'traefik.http.middlewares.webapi-compat.replacepathregex.replacement=/ltapi'
+    restart: on-failure
+  ltapi-stream:
+    image: registry.isl.iar.kit.edu/ltapi-stream
+    build: lt_api_stream
+    depends_on:
+      - qbmediator
+    networks:
+      - LTPipeline
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+
+      - 'traefik.http.services.ltapi-stream.loadbalancer.server.port=5000'
+
+      - 'traefik.http.routers.ltapi-stream.tls=true'
+      - 'traefik.http.routers.ltapi-stream.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.ltapi-stream.rule=Host(`${DOMAIN}`) && PathPrefix(`/ltapi/stream`)'
+      - 'traefik.http.routers.ltapi-stream.service=ltapi-stream'
+      - 'traefik.http.routers.ltapi-stream.middlewares=basicauth'
+
+      - 'traefik.http.routers.webapi-stream.tls=true'
+      - 'traefik.http.routers.webapi-stream.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.webapi-stream.rule=Host(`${DOMAIN}`) && PathPrefix(`/webapi/stream`)'
+      - 'traefik.http.routers.webapi-stream.service=ltapi-stream'
+      - 'traefik.http.routers.webapi-stream.middlewares=webapi-compat,traefik-forward-auth'
+    restart: on-failure
+
+  log:
+    image: registry.isl.iar.kit.edu/log
+    build: loggingwoker
+    depends_on:
+      - qbmediator
+    command: python -u logger.py --queue-server kafka --queue-port 9092 --redis-server redis --location /logs/
+    networks:
+      - LTPipeline
+    environment:
+      - QUEUE_SYSTEM=${QUEUE_SYSTEM:-KAFKA}
+    restart: on-failure
+    volumes:
+      - logs:/logs
+      - archive:/logs/archive
+
+  frontend:
+    image: registry.isl.iar.kit.edu/ltfrontend
+    build: ltfrontend
+    depends_on:
+      - traefik
+      - ltapi
+      - ltapi-stream
+    networks:
+      - LTPipeline
+    environment:
+      QUEUE_SYSTEM: '${QUEUE_SYSTEM:-KAFKA}'
+      API: 'http://ltapi:5000'
+      API_STREAM: 'http://ltapi-stream:5000'
+      API_EXTERNAL_HOST: '/webapi'
+      ARCHIVE: 'http://archive:5000'
+      THEME: '${FRONTEND_THEME:-default}'
+      REDIS_HOST: 'redis'
+      DOMAIN: '$DOMAIN'
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.frontend.tls=true'
+      - 'traefik.http.routers.frontend.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.services.frontend.loadbalancer.server.port=5000'
+      - 'traefik.http.routers.frontend.middlewares=logout,traefik-forward-auth'
+      - 'autoheal-app=true'
+    restart: on-failure
+
+  archive:
+    image: registry.isl.iar.kit.edu/lt-archive
+    build: lt-archive
+    networks:
+      - LTPipeline
+    environment:
+      QUEUE_SYSTEM: '${QUEUE_SYSTEM:-KAFKA}'
+      LT_ARCHIVE_DIR: '/data'
+      REDIS_HOST: 'redis'
+    volumes:
+      - 'archive:/data'
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.archive.tls=true'
+      - 'traefik.http.routers.archive.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.archive.rule=Host(`${DOMAIN}`) && PathPrefix(`/ltarchive`)'
+      - 'traefik.http.services.archive.loadbalancer.server.port=5000'
+      - 'traefik.http.routers.archive.middlewares=traefik-forward-auth'
+      - 'autoheal-app=true'
+    restart: on-failure
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow
+    command: mlflow server --static-prefix /mlflow --host 0.0.0.0
+    networks:
+      - LTPipeline
+    labels:
+      - 'pipeline=${PIPELINE_NAME:-main}'
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.mlflow.tls=true'
+      - 'traefik.http.routers.mlflow.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.mlflow.rule=Host(`${DOMAIN}`) && PathPrefix(`/mlflow`)'
+      - 'traefik.http.services.mlflow.loadbalancer.server.port=5000'
+      #- 'traefik.http.routers.mlflow.middlewares=traefik-forward-auth'
+    volumes:
+      - 'mlflow_data:/mlruns'
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    network_mode: none
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal-app
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+
+networks:
+  LTPipeline: {}
+volumes:
+  certs:
+    name: 'certs'
+  logs: {}
+  archive: {}
+  redis_data: {}
+  mlflow_data: {}
+  dex_data: {}

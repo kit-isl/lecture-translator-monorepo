@@ -1,0 +1,9 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+requests
+numpy
+nltk
+transformers
+sentencepiece
+python-dotenv
+jinja2
+torch

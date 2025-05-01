@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+
+
+      
+  <div class="container">
+    <div class="content">
+
+
+   
+    <h1>{{ name }}</h1>
+
+
+      <div class="sessions">
+
+
+          <div class="session">
+            <div class="window-header"> Display </div>
+        <span class="session-text" id="display"> Controll display</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Video conference </div>
+        <span class="session-text" id="vc"> Start video conference</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Lecture translator </div>
+        <span class="session-text" id="lt"> Controll translation</span>
+          </div>
+	
+          <div class="session">
+            <div class="window-header"> Apps </div>
+        <span class="session-text" id="apps"> Start additional apps</span>
+          </div>
+
+    </div>
+
+
+
+
+      <div class="sessions" id="DisplayPanel">
+
+
+          <div class="session">
+            <div class="window-header"> Home </div>
+        <span class="session-text" id="show_home"> Show home screen</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Controll </div>
+        <span class="session-text" id="show_controll"> Show controlls</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Video conference </div>
+        <span class="session-text" id="show_vc"> Show Video Conference</span>
+          </div>
+  
+          <div class="session">
+            <div class="window-header"> Lecture translator</div>
+        <span class="session-text" id="show_lt"> Show Lecture translator</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Lecture translator</div>
+        <span class="session-text" id="show_sub"> Show subtitles</span>
+          </div>
+
+
+          <div class="session">
+            <div class="window-header"> Whiteboard</div>
+        <span class="session-text" id="show_wb"> Show Whiteboard</span>
+          </div>
+
+    </div>
+
+      <div class="sessions" id="VCPanel">
+
+
+          <div class="session">
+            <div class="window-header"> Start </div>
+        <span class="session-text" id="start_zoom"> Start Zoom call</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Join </div>
+        <span class="session-text" id="join_zoom"> Join Zoom call</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> End </div>
+        <span class="session-text" id="end_zoom"> End Zoom call</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Start </div>
+        <span class="session-text" id="start_google"> Start Google meet</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Join </div>
+        <span class="session-text" id="join_google"> Join Google meet</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> End </div>
+        <span class="session-text" id="end_google"> End Google meet</span>
+          </div>
+
+    </div>
+
+
+      <div class="sessions" id="LTPanel">
+
+
+          <div class="session">
+            <div class="window-header"> Start </div>
+        <span class="session-text" id="start_event"> Start Event</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> Join </div>
+        <span class="session-text" id="join_session"> Join session</span>
+          </div>
+
+          <div class="session">
+            <div class="window-header"> End </div>
+        <span class="session-text" id="end_session"> End session</span>
+          </div>
+
+
+    </div>
+
+
+      <div class="sessions" id="AppsPanel">
+
+
+          <div class="session">
+            <div class="window-header"> KitKat </div>
+        <span class="session-text" id="start_kitkat"> Talk to KitKat</span>
+          </div>
+
+    </div>
+
+
+
+    </div>
+    
+<div class="session-info" id="link_window">
+    <div class="form-row" >
+      <div class="form-column">
+        <label for="password">Link</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="link" name="link" value="">
+      </div>
+    </div>
+      <input type="hidden" value="" name="vc_name" id="vc_name"></td>
+    <button type="submit" id=join_vc>Join</button>
+</div>
+
+    <script>
+     
+         const ButtonDisplay = document.getElementById('display');
+         const ButtonVC = document.getElementById('vc');
+         const ButtonLT = document.getElementById('lt');
+         const ButtonApps = document.getElementById('apps');
+         const ButtonJoin = document.getElementById('join_vc');
+
+         const DisplayPanel = document.getElementById('DisplayPanel');
+         const VCPanel = document.getElementById('VCPanel');
+         const LTPanel = document.getElementById('LTPanel');
+         const AppsPanel = document.getElementById('AppsPanel');
+
+
+
+         const LinkPanel = document.getElementById('link_window');
+
+      // Get the add window button and windows container elements
+
+      ButtonDisplay.addEventListener('click', () => {
+        hidePanels();
+      DisplayPanel.style.display = "flex"
+      });
+      ButtonVC.addEventListener('click', () => {
+        hidePanels();
+      VCPanel.style.display = "flex"
+      });
+      ButtonLT.addEventListener('click', () => {
+        hidePanels();
+      LTPanel.style.display = "flex"
+      });
+      ButtonApps.addEventListener('click', () => {
+        hidePanels();
+      AppsPanel.style.display = "flex"
+      });
+
+
+
+
+            function hidePanels() {
+              DisplayPanel.style.display = "none"
+              VCPanel.style.display = "none"
+              LTPanel.style.display = "none"
+              AppsPanel.style.display = "none"
+              LinkPanel.style.display = "none"
+      }
+
+        hidePanels();
+
+
+      document.getElementById('show_home').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "home"}}));
+      });
+
+      document.getElementById('show_controll').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "controll"}}));
+      });
+
+      document.getElementById('show_vc').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "video_conference"}}));
+      });
+
+      document.getElementById('show_lt').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "lecture_translator"}}));
+      });
+
+      document.getElementById('show_lt').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "subtitle"}}));
+      });
+
+
+      document.getElementById('show_wb').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "set_display","parameter" : {"page" : "whiteboard"}}));
+      });
+
+
+      document.getElementById('start_zoom').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_zoom","parameter" : {"command" : "start"}}));
+      });
+      document.getElementById('end_zoom').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_zoom","parameter" : {"command" : "end"}}));
+      });
+      document.getElementById('join_zoom').addEventListener('click', () => {
+        LinkPanel.style.display = "flex"
+        document.getElementById('vc_name').value = "zoom"
+        document.getElementById('link').value = ""
+      });
+
+      document.getElementById('start_google').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_google","parameter" : {"command" : "start"}}));
+      });
+      document.getElementById('end_google').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_google","parameter" : {"command" : "end"}}));
+      });
+      document.getElementById('join_google').addEventListener('click', () => {
+        LinkPanel.style.display = "flex"
+        document.getElementById('vc_name').value = "google"
+        document.getElementById('link').value = ""
+      });
+
+      document.getElementById('start_event').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_lt","parameter" : {"command" : "start"}}));
+      });
+      document.getElementById('end_session').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_lt","parameter" : {"command" : "end"}}));
+      });
+
+      document.getElementById('join_session').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "controll_lt","parameter" : {"command" : "join"}}));
+      });
+
+      document.getElementById('start_kitkat').addEventListener('click', () => {
+        send_command(JSON.stringify({ "function": "start_kitkat","parameter" : {}}));
+      });
+
+
+      document.getElementById('join_vc').addEventListener('click', () => {
+        vc = document.getElementById('vc_name').value
+        link = document.getElementById('link').value
+        if (vc == "zoom") {
+          send_command(JSON.stringify({ "function": "controll_zoom","parameter" : {"command" : "join","link" : link }}));
+        }else {
+          send_command(JSON.stringify({ "function": "controll_google","parameter" : {"command" : "join","link" : link }}));
+        }
+      });
+
+
+      function send_command(command) {
+              console.log("Send command:",command)
+              fetch('{{ server }}/{{ session }}/2/append', {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(JSON.stringify({ "seq": command,"markup":"command"}))
+              });
+      }
+
+    </script>
+
+
+  {% set footer = 'themes/' ~ theme ~ '/html/footer.html' %}
+{% include footer %}
+  </body>
+</html>
+

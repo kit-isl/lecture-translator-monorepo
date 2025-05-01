@@ -1,0 +1,20 @@
+[submodule "ltweb/static/themes/kittheme"]
+	path = ltweb/static/themes/kittheme
+	url = ../kittheme.git
+	branch = main
+[submodule "ltweb/templates/themes/kittheme"]
+	path = ltweb/templates/themes/kittheme
+	url = ../kittheme.git
+	branch = main
+[submodule "ltweb/static/themes/interacttheme"]
+	path = ltweb/static/themes/interacttheme
+	url = ../interacttheme.git
+[submodule "ltweb/templates/themes/interacttheme"]
+	path = ltweb/templates/themes/interacttheme
+	url = ../interacttheme.git
+[submodule "ltweb/templates/themes/defaulttheme"]
+	path = ltweb/templates/themes/defaulttheme
+	url = git@gitlab.kit.edu:kit/isl-ai4lt/lt-middleware/defaulttheme.git
+[submodule "ltweb/static/themes/defaulttheme"]
+	path = ltweb/static/themes/defaulttheme
+	url = git@gitlab.kit.edu:kit/isl-ai4lt/lt-middleware/defaulttheme.git

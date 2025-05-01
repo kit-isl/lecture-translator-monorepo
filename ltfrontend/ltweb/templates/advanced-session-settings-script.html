@@ -1,0 +1,128 @@
+<script>
+
+    function updateSelect(select, codes) {
+      let options = select.options;
+      for (let i = 0; i < options.length; i++) {
+        if (codes.includes(options[i].value)) {
+          options[i].selected = true;
+        } else {
+          options[i].selected = false;
+        }
+      }
+    }
+  
+    function updateTags(tagify, select) {
+      let options = select.options;
+      let tags = [];
+      let codes = [];
+  
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].selected) {
+          codes.push(options[i].value);
+        }
+      }
+      for (let i = 0; i < tagify.settings.whitelist.length; i++) {
+        if (codes.includes(tagify.settings.whitelist[i].code)) {
+          tags.push(tagify.settings.whitelist[i]);
+        }
+      }
+      tagify.removeAllTags();
+      tagify.addTags(tags);
+    }
+
+    function initAdvancedOptions(parentElement) {
+        // handling lang input
+        const langs_input = new Tagify(parentElement.querySelector('input[name=langs-input]'), {
+            dropdown: {
+                maxTags: Infinity,
+                position: 'input',
+                maxItems: Infinity,
+                originalInputValueFormat: tagData => tagData.code,
+                enabled: 0 // always opens dropdown when input gets focus
+            }
+        });
+      
+        const langs_input_select = parentElement.querySelector('select[name=language]')
+      
+        langs_input.settings.whitelist = [
+          {% for l,display in asr_langs %}
+            {'value': '{{ display }}', 'code': '{{ l }}', "editable" : false},
+          {% endfor %}
+        ]
+        updateTags(langs_input, langs_input_select);
+      
+        langs_input.on('change', function(e){
+          let codes = []; // Declare the 'codes' variable before the if-else statement
+      
+          if (e.detail.value == '') {
+            codes = []; // Assign an empty array to 'codes' if the value is empty
+          } else {
+            codes = JSON.parse(e.detail.value).map(x => x['code']); // Assign the parsed value to 'codes'
+          }
+      
+          updateSelect(langs_input_select, codes);
+        });
+      
+        // handling mt langs
+        const mt_langs = new Tagify(parentElement.querySelector('input[name=mt-langs]'), {
+            dropdown: {
+                maxTags: Infinity,
+                position: 'input',
+                maxItems: Infinity,
+                originalInputValueFormat: tagData => tagData.code,
+                enabled: 0 // always opens dropdown when input gets focus
+            }
+        });
+      
+        mt_langs.settings.whitelist = [
+          {% for l,display in mt_langs %}
+            {'value': '{{ display }}', 'code': '{{ l }}', "editable" : false},
+          {% endfor %}
+        ]
+      
+        const mt_langs_select = parentElement.querySelector('select[name=mtLanguage]')
+        mt_langs.on('change', function(e){
+          let codes = []; // Declare the 'codes' variable before the if-else statement
+      
+          if (e.detail.value == '') {
+            codes = []; // Assign an empty array to 'codes' if the value is empty
+          } else {
+            codes = JSON.parse(e.detail.value).map(x => x['code']); // Assign the parsed value to 'codes'
+          }
+      
+          updateSelect(mt_langs_select, codes);
+        });
+      
+        // handling tts langs
+        const tts_langs = new Tagify(parentElement.querySelector('input[name=tts-langs]'), {
+            dropdown: {
+                maxTags: Infinity,
+                position: 'input',
+                maxItems: Infinity,
+                originalInputValueFormat: tagData => tagData.code,
+                enabled: 0 // always opens dropdown when input gets focus
+            }
+        });
+      
+        tts_langs.settings.whitelist = [
+          {% for l,display in tts_langs %}
+            {'value': '{{ display }}', 'code': '{{ l }}', "editable" : false},
+          {% endfor %}
+        ]
+      
+        const tts_langs_select = parentElement.querySelector('select[name=audioLanguage]')
+        tts_langs.on('change', function(e){
+          let codes = []; // Declare the 'codes' variable before the if-else statement
+      
+          if (e.detail.value == '') {
+            codes = []; // Assign an empty array to 'codes' if the value is empty
+          } else {
+            codes = JSON.parse(e.detail.value).map(x => x['code']); // Assign the parsed value to 'codes'
+          }
+          updateSelect(tts_langs_select, codes);
+        });
+        console.log("Return:",langs_input);
+        return { langs_input, mt_langs, tts_langs };
+    }
+  
+  </script>

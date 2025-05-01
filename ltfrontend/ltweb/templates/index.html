@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.min.js"></script>
+    
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+
+
+      
+  <div class="container">
+    <div class="menu" id="menu" aria-label="Navigation Menu">
+      <div class="menu-content">
+	{% for title,link in menu %}
+        <div class="menu-title"> <a href="{{ link }}"> {{ title }} </a> </div>
+	{% endfor %}
+      </div>
+    </div>
+    <div class="sidebartop">
+      <div class="sidebar-icon">
+        <i class="fas fa-bars"></i>
+      </div>
+      </div>
+    <div class="content">
+
+
+
+
+      <div class="sessions">
+
+	{% for title,icon,link,id,html,field in layout %}
+	{% if link != "" %}
+        <a href="{{ link }}">
+	  {% endif %}
+          <div class="session">
+            <div class="window-header"> {{ title }} </div>
+	    {% if id != "" %}
+	    <span class="logo" id="{{ id }}">
+	    {% endif %}
+            <img src="{{ icon }}" class="logo" alt="{{ title }}">
+	    {% if id != "" %}
+	    </span>
+	    {% endif %}	    
+          </div>
+	{% if link != "" %}
+        </a>
+	{% endif %}
+	
+	{% endfor %}
+	
+    </div>
+	{% for title,icon,link,id,html,field in layout %}
+	{% if html != "" %}
+      {% include html %}
+	{% endif %}
+	
+	{% endfor %}
+    </div>
+    
+
+
+    <script>
+     
+
+      // Get the add window button and windows container elements
+
+      {% for title,icon,link,id,html,field in layout %}
+      {% if id != "" %}
+         const Button{{ loop.index }} = document.getElementById('{{ id }}');
+         const Options{{ loop.index }} = document.getElementById('{{ field }}');
+         Options{{ loop.index }}.style.display = "none"
+      
+	{% endif %}
+	
+	{% endfor %}
+
+      {% for title,icon,link,id,html,field in layout %}
+      {% if id != "" %}
+      Button{{ loop.index }}.addEventListener('click', () => {
+      {% for title2,icon2,link2,id2,html2,field2 in layout %}
+      {% if id2 != "" %}
+      Options{{ loop.index }}.style.display = "none"
+      {% endif %}
+      
+      {% endfor %}
+      Options{{ loop.index }}.style.display = "block"
+      });
+      
+	{% endif %}
+	
+	{% endfor %}
+      
+
+
+						    var menu = document.getElementById('menu');
+
+var container = document.querySelector('.container');
+container.addEventListener('mousemove', function(event) {
+  var mouseX = event.clientX;
+
+  if (mouseX <= 100) { // Adjust the width of the sidebar as needed
+    menu.style.left = '20px'; // Move the menu to the visible position
+  } else {
+    menu.style.left = '-300px'; // Move the menu back to its initial position
+  }
+});
+
+
+    </script>
+
+
+  {% set footer = 'themes/' ~ theme ~ '/html/footer.html' %}
+{% include footer %}
+  </body>
+</html>
+

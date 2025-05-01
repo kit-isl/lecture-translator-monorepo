@@ -1,0 +1,14 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+Werkzeug==2.2.2
+Flask==2.2.3
+Flask-sse
+flasgger
+requests
+gevent
+gunicorn
+kombu
+flask-cors
+langcodes
+language_data
+numpy
+scipy

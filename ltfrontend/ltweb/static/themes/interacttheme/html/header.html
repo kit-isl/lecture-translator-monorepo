@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='themes/interacttheme/css/interact.css') }}">
+
+
+<div layout="row" class="top-row layout-row">
+        <!---->
+        <div flex="" class="top-links flex">
+            <a href="{{ url_for('index') }}">HOME</a>
+            <a href="{{ url_for('contact') }}">CONTACT</a>
+            <a href="{{ url_for('legals') }}">LEGALS</a>
+            <a href="http://www.interact.kit.edu">InterACT</a>
+        </div>
+    </div>
+<header>
+    <a href="{{ url_for('index') }}"><h1>InterACT lecture translator</h1></a>
+    {% set filename = 'themes/' ~ theme ~ '/img/logo.png' %}
+    <a href="http://www.kit.edu"><img src="{{ url_for('static', filename=filename) }}" alt="logo" width="auto" height="50" style="margin-right:10px"></a>
+    {% set filename = 'themes/' ~ theme ~ '/img/cmu.png' %}
+    <a href="http://www.cmu.edu"><img src="{{ url_for('static', filename=filename) }}" alt="logo" width="auto" height="50" style="margin-right:10px"></a>
+    {% set filename = 'themes/' ~ theme ~ '/img/interact.png' %}
+    <a href="http://www.interact.kit.edu"><img src="{{ url_for('static', filename=filename) }}" alt="logo" width="auto" height="50" style="margin-right:10px"></a>
+</header>
+
+

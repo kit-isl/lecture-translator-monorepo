@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+{% set title = 'themes/' ~ theme ~ '/html/title.html' %}
+{% include title %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/access.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tagify/4.26.5/tagify.min.js"></script>
+  </head>
+  <body>
+
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+          <h1>{{ name }}</h1>
+
+	  
+
+<div class="session-info" id="uploadlectureinfo" width=800px>
+    <div class="window-header"> Configure Lecture Video 
+        <div class="buttons-container"> <button class="close2-button" onclick="closeX()"><i class="fas fa-times"></i></button> </div>
+
+    </div>
+  <form action="{{ url_for('upload_lecture') }}" enctype="multipart/form-data" method="POST">
+    <div class="form-row" id="archivePath">
+      <div class="form-column">
+        <input type="text" id="path" name="path" readonly hidden value="{{ path }}">
+      </div>
+    </div>
+    <div class="form-row" id="name">
+      <div class="form-column">
+        <label for="name">Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="name" name="name" value="{{ name }}" required>
+      </div>
+    </div>
+    <input type="text" hidden id=videofile name=videofile value="{{ mediafile }}">
+    <div class="form-row" id="topicName">
+      <div class="form-column">
+        <label for="topicname">Topic</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="topicname" name="topicname" value="{{ topic }}" >
+      </div>
+    </div>
+    <div class="form-row" id="Date">
+      <div class="form-column">
+        <label for="date">Date</label>
+      </div>
+      <div class="form-column">
+        <input type="date" id="date" name="date" value="{{ date }}">
+      </div>
+    </div>
+    <div class="form-row" id="speakerName">
+      <div class="form-column">
+        <label for="speakername">Speaker Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="speakername" name="speakername" value="{{ speaker }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="legals" id="legalsName">Accept <a href="/terms">Terms of Service</a></label>
+      </div>
+      <div class="form-column">
+        <input type="checkbox" id="legals" name="legals" required value="1">
+      </div>
+    </div>
+
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="profile">Profile</label>
+        </div>
+        <div class="form-column">
+          <select id="profile" name="profile">
+            {% for v,t in profiles %}
+              <option value="{{ v }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    
+    <input type="text" id="profile_names" name="profile_names" style="display: none;" default="">
+
+    <div class="form-row">
+      <div class="form-column">
+        <div class="advanced-options-toggle">
+          <button type="button" class="toggle-button" onclick="toggleAdvancedOptions()">Advanced Options</button>
+        </div>
+      </div>
+    </div>
+
+    {%include 'advanced-session-settings.html' %}
+    
+    <div class="form-row">
+      <div class="form-column">
+        <button type="submit">Process again</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+
+
+{% include 'advanced-session-settings-script.html' %}
+
+
+
+    {%include 'access.html' %}
+    
+
+
+
+
+
+
+
+
+<script>
+
+  const ls = document.getElementById("uploadlectureinfo")
+  const {langs_input,mt_langs,tts_langs} = initAdvancedOptions(ls);
+  const advancedOptions = ls.querySelector(".advanced-options");
+  advancedOptions.style.display = "none";
+
+
+
+        function closeX() {
+        console.log("Close configuration ")
+
+        window.location.href = "{{ url_for('archivesession',dir=dir) }}";
+
+
+      }
+
+
+
+  function toggleAdvancedOptions() {
+    var advancedOptions = document.querySelector(".advanced-options");
+    var toggleButton = document.querySelector(".toggle-button");
+    advancedOptions.classList.toggle("hidden");
+    if (advancedOptions.classList.contains("hidden")) {
+      toggleButton.innerText = "Advanced Options";
+      advancedOptions.style.display = "none";
+    } else {
+      toggleButton.innerText = "Hide Advanced Options";
+      advancedOptions.style.display = "block";
+    }
+  }
+
+  function update_profile() {
+    var profile_id = document.getElementById('profile').value
+    console.log("Profile_id "+profile_id);
+    fetch('/get_profile_data/'+profile_id, {
+        method: 'POST'
+    })
+    .then(response => {
+        return response.json();
+    })
+    .then(res => {
+        document.querySelectorAll('select[multiple]').forEach((selectElement) => {
+          Array.from(selectElement.options).forEach((option) => {
+            option.selected = false;
+          });
+        });
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        res.forEach(item => {
+            key = item[0];
+            value = item[1];
+            var element = document.getElementById(key)
+            // console.log(key);
+            if (element !== null) {
+                if (element.tagName === "SELECT") {
+                    for (const option of element.options) {
+                        if (option.value === value) {
+                            option.selected = true;
+                            //console.log("DONE1 Key "+key+" Value "+value);
+                        }
+                    }
+                } else if (element.tagName === "INPUT" && element.type === "checkbox") {
+                    element.checked = value === "1";
+                    //console.log("DONE2 Key "+key+" Value "+value);
+                } else {
+                    element.value = value;
+                    //console.log("DONE3 Key "+key+" Value "+value);
+                }
+
+                if (key === "language") {
+                    updateTags(langs_input, element);
+                } else if (key === "mtLanguage") {
+                    updateTags(mt_langs, element);
+                } else if (key === "audioLanguage") {
+                    updateTags(tts_langs, element);
+                }
+
+            } else {
+                console.log("ERROR Key "+key+" Value "+value);
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+  }
+
+  update_profile();
+
+  const profileSelect = document.getElementById('profile');
+
+  // Add an event listener for the change event
+  profileSelect.addEventListener('change', function() {
+    update_profile();
+  });
+
+  const selectElement = profileSelect;
+  selectElement.addEventListener('dblclick', function() {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const input = document.createElement('input');
+
+        input.type = 'text';
+        input.value = selectedOption.text;
+
+        input.addEventListener('blur', function() {
+            selectedOption.text = input.value;
+
+            options = selectElement.options;
+            var names = '';
+            for (var i = 0; i < options.length; i++) {
+                names += options[i].text + "|";
+            }
+            const profile_names = document.getElementById('profile_names');
+            profile_names.value = names;
+
+            selectElement.style.display = 'inline-block';
+            input.remove();
+        });
+
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                input.blur();
+            }
+        });
+
+        selectElement.parentNode.insertBefore(input, selectElement.nextSibling);
+        input.focus();
+        selectElement.style.display = 'none';
+    });
+
+    ids = ["language", "mtLanguage", "audioLanguage"];
+
+    ids.forEach(id => {
+        const selectElement = document.getElementById(id);
+        const events = ['change', 'click', 'focus', 'mousedown', 'mouseup'];
+
+        events.forEach(eventType => {
+            selectElement.addEventListener(eventType, function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (eventType === "click") {
+                    const option = event.target;
+                    option.selected = !option.selected;
+                    // updateTags(slect_lang_object, selectElement);
+                }
+
+                if (id == "language") {
+                    updateTags(langs_input, selectElement);
+                } else if (id == "mtLanguage") {
+                    updateTags(mt_langs, selectElement);
+                } else if (id == "audioLanguage") {
+                    updateTags(tts_langs, selectElement);
+                }
+                
+            });
+        });
+    });
+
+</script>
+
+
+
+    <script type="text/javascript">
+
+
+      uploadlectureinfo.style.display = "block"
+
+
+
+
+
+      </script>
+ 
+    
+  </body>
+
+
+
+</html>
+

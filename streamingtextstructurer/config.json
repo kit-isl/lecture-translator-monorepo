@@ -1,0 +1,36 @@
+{
+    "display_language": "en",
+    "out_lang": "{}",
+    "method": "online_model",
+    "dynamic_threshold": "True",
+    "StablePrefix": "{}",
+    "senderID": "{}",
+    "waiting_messages": "{}",
+    "languages": "{}",
+    "leadingStream": "-1",
+    "asrStream": "-1",
+    "nextSend": "-1",
+    "paragraphLength": "5",
+    "previous_titles": "[]",
+    "model_parameters": {
+        "online_model": {
+            "endpoint": "http://192.168.0.68:3004/segment",
+            "chapter_look_ahead": 5,
+            "paragraph_look_ahead": 0,
+            "prefix_titles": true,
+            "chapter_threshold": 0.4,
+            "paragraph_threshold": 0.4,
+            "paragraph_every_n_sentences": 5,
+            "mt_server": "http://i13hpc64.cluster:5051/predictions/"
+        },
+        "offline_model": {
+            "endpoint": "http://192.168.0.68:3003/segment",
+            "prefix_titles": true,
+            "chapter_threshold": 0.45,
+            "paragraph_threshold": 0.4,
+            "paragraph_every_n_sentences": 5,
+            "mt_server": "http://i13hpc64.cluster:5051/predictions/"
+        }
+    },
+    "mt_server_default": "http://i13hpc64.cluster:5051/predictions/"
+}

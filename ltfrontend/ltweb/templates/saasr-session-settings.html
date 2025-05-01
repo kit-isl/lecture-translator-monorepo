@@ -1,0 +1,34 @@
+<div class="session-info" id="saasrSession">
+  <form action="{{ url_for('meeting') }}" method="POST">
+    <div class="form-row" id="speakerName">
+      <div class="form-column">
+        <label for="speaker"> User create</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="speaker" name="speaker" value="{{user_name}}<{{ user }}>" readonly>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="name" id="meetingName">Meeting name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="name" name="name" placeholder="New Meeting">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="legals" id="legalsName">Accept <a href="/terms">Terms of Service</a></label>
+      </div>
+      <div class="form-column">
+        <input type="checkbox" id="legals" name="legals" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <input type="hidden" value="meeting" name="type" id="type">
+        <button type="submit">Start</button>
+      </div>
+    </div>
+  </form>
+</div>

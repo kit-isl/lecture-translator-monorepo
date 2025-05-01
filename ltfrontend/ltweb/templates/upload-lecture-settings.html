@@ -1,0 +1,247 @@
+<div class="session-info" id="uploadlectureinfo" width=800px>
+    Upload Lecture Video<br><br>
+  <form action="{{ url_for('upload_lecture') }}" enctype="multipart/form-data" method="POST">
+    <div class="form-row" id="archivePath">
+      <div class="form-column">
+        <input type="text" id="path" name="path" readonly hidden>
+      </div>
+    </div>
+    <div class="form-row" id="name">
+      <div class="form-column">
+        <label for="name">Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="name" name="name" placeholder="Lecture-01" required>
+      </div>
+    </div>
+    <div class="form-row" id="videoFile">
+      <div class="form-column">
+        <label for="videofile">Video File</label>
+      </div>
+      <div class="form-column">
+        <input type="file" id="videofile" name="videofile" accept="video/*, audio/*" required>
+      </div>
+    </div>
+    <div class="form-row" id="topicName">
+      <div class="form-column">
+        <label for="topicname">Topic</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="topicname" name="topicname" placeholder="Topic Name">
+      </div>
+    </div>
+    <div class="form-row" id="Date">
+      <div class="form-column">
+        <label for="date">Date</label>
+      </div>
+      <div class="form-column">
+        <input type="date" id="date" name="date" placeholder="Date">
+      </div>
+    </div>
+    <div class="form-row" id="speakerName">
+      <div class="form-column">
+        <label for="speakername">Speaker Name</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="speakername" name="speakername" placeholder="Speaker Name">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        <label for="legals" id="legalsName">Accept <a href="/terms">Terms of Service</a></label>
+      </div>
+      <div class="form-column">
+        <input type="checkbox" id="legals" name="legals" required value="1">
+      </div>
+    </div>
+
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="profile">Profile</label>
+        </div>
+        <div class="form-column">
+          <select id="profile" name="profile">
+            {% for v,t in profiles %}
+              <option value="{{ v }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    
+    <input type="text" id="profile_names" name="profile_names" style="display: none;" default="">
+
+    <div class="form-row">
+      <div class="form-column">
+        <div class="advanced-options-toggle">
+          <button type="button" class="toggle-button" onclick="toggleuploadAdvancedOptions()">Advanced Options</button>
+        </div>
+      </div>
+    </div>
+
+    {%include 'advanced-session-settings.html' %}
+    
+    <div class="form-row">
+      <div class="form-column">
+        <button type="submit">Upload</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+
+<script>
+
+  const ul = document.getElementById("uploadlectureinfo")
+  const ul_advancedOptions = initAdvancedOptions(ul);
+  const ul_langs_input = ul_advancedOptions.langs_input;
+  const ul_mt_langs = ul_advancedOptions.mt_langs;
+  const ul_tts_langs = ul_advancedOptions.tts_langs;
+  console.log("UL:", ul_langs_input);
+  const uploadAdvancedOptions = ul.querySelector(".advanced-options");
+  uploadAdvancedOptions.style.display = "none";
+
+  function toggleuploadAdvancedOptions() {
+    var uploadAdvancedOptions = ul.querySelector(".advanced-options");
+    var toggleButton = ul.querySelector(".toggle-button");
+    uploadAdvancedOptions.classList.toggle("hidden");
+    if (uploadAdvancedOptions.classList.contains("hidden")) {
+      toggleButton.innerText = "Advanced Options";
+      uploadAdvancedOptions.style.display = "none";
+    } else {
+      toggleButton.innerText = "Hide Advanced Options";
+      uploadAdvancedOptions.style.display = "block";
+    }
+  }
+
+  function update_profile_upload() {
+    var profile_id = ul.querySelector('#profile').value
+    console.log("Profile_id "+profile_id);
+    fetch('/get_profile_data/'+profile_id, {
+        method: 'POST'
+    })
+    .then(response => {
+        return response.json();
+    })
+    .then(res => {
+        ul.querySelectorAll('select[multiple]').forEach((selectElement) => {
+          Array.from(selectElement.options).forEach((option) => {
+            option.selected = false;
+          });
+        });
+        ul.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        res.forEach(item => {
+            key = item[0];
+            value = item[1];
+            var element = ul.querySelector("#"+key)
+            // console.log(key);
+            if (element !== null) {
+                if (element.tagName === "SELECT") {
+                    for (const option of element.options) {
+                        if (option.value === value) {
+                            option.selected = true;
+                            //console.log("DONE1 Key "+key+" Value "+value);
+                        }
+                    }
+                } else if (element.tagName === "INPUT" && element.type === "checkbox") {
+                    element.checked = value === "1";
+                    //console.log("DONE2 Key "+key+" Value "+value);
+                } else {
+                    element.value = value;
+                    //console.log("DONE3 Key "+key+" Value "+value);
+                }
+                console.log("UL:",ul_langs_input);
+
+                if (key === "language") {
+                    updateTags(ul_langs_input, element);
+                } else if (key === "mtLanguage") {
+                    updateTags(ul_mt_langs, element);
+                } else if (key === "audioLanguage") {
+                    updateTags(ul_tts_langs, element);
+                }
+
+            } else {
+                console.log("ERROR Key "+key+" Value "+value);
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+  }
+
+  update_profile_upload();
+
+  const ulProfileSelect = ul.querySelector('#profile');
+
+  // Add an event listener for the change event
+  ulProfileSelect.addEventListener('change', function() {
+    update_profile_upload();
+  });
+
+  const ulSelectElement = ulProfileSelect;
+  ulSelectElement.addEventListener('dblclick', function() {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const input = ul.createElement('input');
+
+        input.type = 'text';
+        input.value = selectedOption.text;
+
+        input.addEventListener('blur', function() {
+            selectedOption.text = input.value;
+
+            options = selectElement.options;
+            var names = '';
+            for (var i = 0; i < options.length; i++) {
+                names += options[i].text + "|";
+            }
+            const profile_names = ul.querySelector('profile_names');
+            profile_names.value = names;
+
+            selectElement.style.display = 'inline-block';
+            input.remove();
+        });
+
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                input.blur();
+            }
+        });
+
+        selectElement.parentNode.insertBefore(input, selectElement.nextSibling);
+        input.focus();
+        selectElement.style.display = 'none';
+    });
+
+    ids = ["language", "mtLanguage", "audioLanguage"];
+
+    ids.forEach(id => {
+        const selectElement = ul.querySelector("#"+id);
+        const events = ['change', 'click', 'focus', 'mousedown', 'mouseup'];
+
+        events.forEach(eventType => {
+            selectElement.addEventListener(eventType, function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (eventType === "click") {
+                    const option = event.target;
+                    option.selected = !option.selected;
+                    // updateTags(slect_lang_object, selectElement);
+                }
+
+                if (id == "language") {
+                    updateTags(ul_langs_input, selectElement);
+                } else if (id == "mtLanguage") {
+                    updateTags(ul_mt_langs, selectElement);
+                } else if (id == "audioLanguage") {
+                    updateTags(ul_tts_langs, selectElement);
+                }
+                
+            });
+        });
+    });
+
+</script>

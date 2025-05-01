@@ -1,0 +1,13 @@
+{
+    "display_language": "en",
+    "output_languages": "[]",
+    "out_lang": "[]",
+    "method": "streaming_simple",
+    "StablePrefix": "[]",
+    "senderID": "{}",
+    "waitingMessages": "[]",
+    "languages": "[]",
+    "leadingStream": "-1",
+    "nextSend": "-1",
+    "paragraphLength": "5"
+}

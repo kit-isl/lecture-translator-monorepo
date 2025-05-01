@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Available Sessions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+
+  </head>
+  <script src="https://cdn.jsdelivr.net/gh/poush/random-animal/dist/random-animal.min.js"></script>
+  <body>
+{% set header = 'themes/' ~ theme ~ '/html/header.html' %}
+{% include header %}
+
+
+    <h1>Available Sessions</h1>
+    <div class="sessions">
+      {% for name, id,present in sessionList %}
+      <div class="session">
+        <div class="window-header">{{ name }}
+        {% if present == True %}
+        <span class="close-button" onclick="closeWindow({{ id }})">&times;</span>
+        {% endif %}
+        </div>
+        <span class="session-text" id="start{{ id }}"> Join</span>
+      </div>
+      {% endfor %}
+    </div>
+
+
+<div class="session-info" id="sessioninfo">
+  <form action='{{ url_for("joinroom") }}' method="POST">
+    <div class="form-row" id="speakerName">
+      <div class="form-column">
+        <label for="password">Password</label>
+      </div>
+      <div class="form-column">
+        <input type="text" id="password" name="password" value="">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-column">
+        Room:
+      </div>
+      <div class="form-column">
+        <input type ="text" id="room_name" name="room_name" value = "" readonly>
+      </div>
+    </div>
+      <input type="hidden" value="" name="type" id="type"></td>
+      <input type="hidden" value="" name="id" id="id"></td>
+    <button type="submit">Join</button>
+  </form>
+</div>
+
+
+
+      <script>
+      const session = document.getElementById('sessioninfo');
+
+      session.style.display = "none";
+
+      var name_list = {};
+      {% for name, id,present in sessionList %}
+        name_list["{{ id }}"] = "{{ name }}";
+        console.log("add",{{ id }},"{{ name }}",name_list["{{ id }}"])
+        const button{{ id }} = document.getElementById('start{{ id }}');
+        // Handle add window button click
+        button{{ id }}.addEventListener('click', () => {
+          showDetails({{ id }});
+      });
+      {% endfor %}
+
+
+      function showDetails(index) {
+        console.log("access",index)
+        console.log(JSON.stringify(name))
+        const meeting = document.getElementById('room_name');
+        meeting.value = name_list[index.toString()]
+        const id = document.getElementById('id');
+        id.value=index
+        session.style.display = "block"
+      }
+
+
+
+
+
+        function closeWindow(id) {
+        console.log("Close session ",id)
+        sent_end = true;
+
+        fetch('{{ server }}/'+id+'/0/append', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify({ "controll": "END"}))
+          })
+      window.location.href = "{{ url_for('overview',type='meeting_room') }}";
+
+
+      }
+
+
+    </script>
+
+
+
+
+
+  </body>
+</html>

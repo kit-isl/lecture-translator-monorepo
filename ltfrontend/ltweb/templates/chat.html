@@ -1,0 +1,446 @@
+<!-- Chat Window -->
+<div class="chat-window">
+	<div class="chat-header">
+		<h2 aria-label="AI Assistant">AI Assistant</h2>
+
+		<!-- <button id="activateSearchButton" class="activate-search-btn">video controll ON</button>
+		
+		<div id="font-size-buttons-chat">
+			<button id="decrease-font" onclick="changeFontSizeChat(-1)">a</button>
+			<button id="increase-font" onclick="changeFontSizeChat(1)">A</button>
+		</div> -->
+		<div class="dropdown">
+			<!-- Settings Button -->
+			<button class="dropdown-button">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="white">
+					<path
+						d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm8.94 4a7.94 7.94 0 0 0-.16-1.5l2.11-1.65a1 1 0 0 0 .21-1.31l-2-3.46a1 1 0 0 0-1.21-.44l-2.49 1A7.9 7.9 0 0 0 16 4.46V2a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v2.46a7.9 7.9 0 0 0-1.7.69l-2.49-1a1 1 0 0 0-1.21.44l-2 3.46a1 1 0 0 0 .21 1.31L3.22 10.5A7.94 7.94 0 0 0 3 12c0 .5.05 1 .16 1.5L1.05 15.14a1 1 0 0 0-.21 1.31l2 3.46a1 1 0 0 0 1.21.44l2.49-1a7.9 7.9 0 0 0 1.7.69V22a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.46a7.9 7.9 0 0 0 1.7-.69l2.49 1a1 1 0 0 0 1.21-.44l2-3.46a1 1 0 0 0-.21-1.31L20.78 13.5A7.94 7.94 0 0 0 21 12zM12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z">
+					</path>
+				</svg>
+			</button>
+
+
+			<!-- Dropdown Content -->
+			<div class="dropdown-content">
+		{% if mode == "archive" %}
+				<button id="activateSearchButton" class="activate-search-btn"
+					aria-label="Activates or deactivates video control when clicked. User can ask chatbot about something and is guided to a fitting video part"
+					title="Click to toggle video control">Video Control ON</button>
+				{% endif %}
+				<button id="decrease-font" onclick="changeFontSizeChat(-1)" aria-label="Decrease font size"
+					title="Click to decrease font size">a</button>
+				<button id="increase-font" onclick="changeFontSizeChat(1)" aria-label="Increase font size"
+					title="Click to increase font size">A</button>
+			</div>
+		</div>
+
+		<button class="close-chat-button"><i class="fas fa-times"></i></button>
+	</div>
+
+	<div class="chat-section">
+		<section class="chat-messages" aria-live="polite" role="log" aria-label="Chat messages">
+			<!-- Chat messages will be added here dynamically -->
+		</section>
+		<div class="chat-input">
+			<input type="text" placeholder="Type your message...">
+			<button>Send</button>
+		</div>
+	</div>
+</div>
+
+<!-- Open Chat Icon -->
+<div class="open-chat-icon">
+	<i class="fas fa-comment-dots">
+		<!--                  <img id="chat-icon" class="chat-icon" src="{{ url_for('static', filename='img/chatbot.png') }}" alt="ChatBot">-->
+	</i>
+</div>
+
+   {% if 'admin' is in groups %}
+      {% if mode == "archive" %}
+      <div class="open-teacher-icon">
+      <a href="{{ url_for('multimodal_assistant',mediafile=mediafile) }}">
+      <i class="fas fa-chalkboard-teacher">
+      </i>
+      </a>
+      </div>
+      {% endif %}
+      {% endif %}
+
+<!-- Add JavaScript for handling chat functionality here -->
+<script>
+	console.log("Script loaded")
+	console.log("openChatIcon:", document.querySelector('.open-chat-icon'));
+	// Get references to DOM elements
+	const chatWindow = document.querySelector('.chat-window');
+	const closeChatButton = document.querySelector('.close-chat-button');
+	const openChatIcon = document.querySelector('.open-chat-icon');
+	const chatMessages = document.querySelector('.chat-messages');
+	const chatInput = document.querySelector('.chat-input input[type="text"]');
+	const chatButton = document.querySelector('.chat-input button');
+
+
+	if (!openChatIcon) {
+		console.error("openChatIcon not found in the DOM");
+	}
+	console.log("openChatIcon:", openChatIcon);
+
+	var streamID = -1;
+	var sessionID = -1;
+
+	// Close chat window when page loads
+	chatWindow.style.display = 'none';
+
+		{% if mode == "archive" %}
+
+	const SearchActivatingButton = document.getElementById('activateSearchButton');
+
+	window.isActive = false;
+
+	SearchActivatingButton.addEventListener('click', () => {
+		// Check current state from the `data-active` attribute
+		const isActive = SearchActivatingButton.getAttribute('data-active') === 'true';
+
+		// Toggle the state
+		const newState = !isActive;
+		window.isActive = newState;
+		SearchActivatingButton.setAttribute('data-active', newState);
+
+		// Update button appearance and text
+		SearchActivatingButton.classList.toggle('active', newState);
+		SearchActivatingButton.textContent = newState ? 'video controll OFF' : 'video controll ON';
+
+		// Track the state change (e.g., log or call a function)
+		console.log('Button is now', newState ? 'active' : 'inactive');
+	});
+	
+	{% endif %}
+
+	// Handle user message submission
+	chatButton.addEventListener('click', (e) => {
+		console.log('event chat button click')
+		e.preventDefault();
+		const userMessage = chatInput.value;
+		if (!isEmptyString(userMessage)) {
+			sendChatMessage(userMessage)
+			chatInput.value = '';
+		}
+	});
+
+	// Handle message input key press
+	chatInput.addEventListener('keypress', (event) => {
+		if (event.key === 'Enter') {
+			const userMessage = chatInput.value;
+			if (!isEmptyString(userMessage)) {
+				sendChatMessage(userMessage)
+				chatInput.value = '';
+		}
+		}
+	});
+
+
+	// Handle close button click
+	closeChatButton.addEventListener('click', () => {
+		chatWindow.style.display = 'none';
+		openChatIcon.style.display = 'flex';
+	});
+
+	// Handle open chat icon click
+	openChatIcon.addEventListener('click', () => {
+		console.log("open chat")
+		console.log("streamID:", streamID)
+		if (streamID == -1) {
+			initConnection();
+			console.log('connection initalized')
+		}
+		console.log("SessionID:", sessionID)
+		console.log("streamID:", streamID)
+		chatWindow.style.display = 'block';
+		openChatIcon.style.display = 'none';
+	});
+
+	let currentFontSize = chatMessages.style.fontSize
+
+	function changeFontSizeChat(increment) {
+		// Set the font size limits
+		const minSize = 8;
+		const maxSize = 100;
+
+		// Increase or decrease font size based on the button clicked
+		currentFontSize += increment * 4; // Change the font size by 4px each time
+
+
+		// Ensure the font size stays within the limits
+		if (currentFontSize < minSize) {
+			currentFontSize = minSize;
+		} else if (currentFontSize > maxSize) {
+			currentFontSize = maxSize;
+		}
+
+		// Apply the selected font size to all chat messages
+		document.querySelectorAll('.chat-message p').forEach((message) => {
+			message.style.fontSize = currentFontSize + 'px';
+		});
+		// Change the font size for the class .chat-message:
+
+		chatMessages.style.fontSize = currentFontSize + 'px';
+
+
+
+	}
+
+	// Add event listener for shortcut: keydown alt & + (to increase font size of window)
+	document.addEventListener('keydown', (event) => {
+		if (event.altKey && event.key === '+') {
+			// Increase font size
+			changeFontSizeChat(2);
+		} else if (event.altKey && event.key === '-') {
+			// Decrease font size
+			changeFontSizeChat(-2);
+		}
+	});
+
+
+	// Modify the addChatMessage function to apply font size changes when messages are added
+	function addChatMessage(message, sender) {
+		console.log("Message:",message)
+		const chatMessage = document.createElement('div');
+		chatMessage.classList.add('chat-message');
+		chatMessage.classList.add(sender);
+		chatMessage.innerHTML = `
+			<p>${message}</p>
+			`;
+
+		chatMessage.setAttribute('role', 'article'); // Mark the message as an article
+		chatMessage.setAttribute('aria-label', `${sender}: ${message}`); // Describe the message for screenreaders
+
+		chatMessages.appendChild(chatMessage);
+		chatMessages.scrollTop = chatMessages.scrollHeight;
+
+		// Apply the current font size
+		const currentFontSize = chatMessages.style.fontSize;
+		chatMessage.querySelector('p').style.fontSize = currentFontSize;
+	}
+
+	function isEmptyString(str) {
+  		return str.trim() === "";
+	}
+
+
+	function sendChatMessage(message) {
+
+		addChatMessage(message, 'user');
+
+		console.log('user message:', message)
+
+		let base64Image = ""
+
+		{% if mode == "archive" %}
+
+		console.log('window active?', window.isActive)
+
+		// set default image_description
+		// if there is no video (e.g., archive folder), skip it
+		//if (!window.isActive && document.getElementById('media')) {
+		if ( document.getElementById('media')) {
+
+			const video = document.getElementById('media');
+
+			// Get the current size of the video element on the screen
+			const displayedWidth = video.offsetWidth;
+			const displayedHeight = video.offsetHeight;
+
+			// Get the actual resolution of the video
+			let videoWidth = video.videoWidth;
+			let videoHeight = video.videoHeight;
+			console.log('width of video: ', videoWidth)
+			console.log('height of video: ', videoHeight)
+
+
+			console.log('new width of video: ', videoWidth)
+			console.log('new height of video: ', videoHeight)
+
+			//Scaling could be applied, but cautiously, because it could lead too streaming crashes if Image String is too large. 
+
+			const canvas = document.createElement('canvas');
+
+			canvas.width = video.videoWidth;
+			canvas.height = video.videoHeight;
+
+			const context = canvas.getContext('2d');
+			context.drawImage(video, 0, 0, videoWidth, videoHeight);
+			console.log('image drawn')
+
+			// Convert the canvas to a base64-encoded string
+			// const dataURL = canvas.toDataURL('image/png');
+			const dataURL = canvas.toDataURL('image/jpeg', 1.0); // High quality
+			if (!dataURL) {
+				console.log('Failed to generate data URL');
+				return;
+			}
+			base64Image = dataURL.split(',')[1]; // Extract the base64 content after "base64,"
+			console.log('base64Image created')
+
+
+			// Display the image for debugging
+			// const img = document.createElement('img');
+			// img.src = dataURL;
+			// img.alt = 'Video Screenshot';
+			// img.style.border = '1px solid #ccc'; // Optional: Add a border for clarity
+			// document.body.appendChild(img); // Append the image to the body or another container
+
+		}
+
+
+
+		fetch('{{ server }}/' + sessionID + '/' + streamID + '/append', {
+			method: 'POST',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(JSON.stringify({ "seq": message, "user":"{{ user }}", "image_des": base64Image }))
+		})
+
+		{% elif mode == "live" %}
+
+
+			
+		fetch('{{ server }}/' + sessionID + '/' + streamID + '/append', {
+			method: 'POST',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(JSON.stringify({ "seq": message, "user":"{{ user }}"}))
+		})
+
+
+			{% endif %}
+	}
+
+	function initConnection() {
+
+		{% if mode == "live" %}
+
+		console.log('{{ server }}/{{ session }}/addBotStream');
+
+		fetch('{{ server }}/{{ session }}/addBotStream', {
+			method: 'POST',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			}
+		}).then((response) => response.json())
+			.then((data) => {
+				console.log('StreamID:', data);
+				streamID = data;
+				sessionID = {{ session }};
+				console.log('streamID here:', streamID)
+				console.log('session ID', sessionID)
+				startReading();
+				sendStart();
+	});
+
+	{% elif mode == "archive" %}
+	//TODO: activate search button only for the archive mode
+
+
+	console.log('{{ server }}/createBotSession');
+
+	fetch('{{ server }}/createBotSession', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(JSON.stringify({ "content_dir": "/logs/archive/{{ mediafile }}" }))
+	}).then((response) => response.json())
+		.then((data) => {
+			console.log('Result:', data)
+			console.log('SessionID:', data.sessionID);
+			sessionID = data.sessionID;
+			console.log('StreamID:', data.streamID);
+			streamID = data.streamID;
+			startReading();
+			console.log('start reading completed')
+			sendStart();
+			console.log('send start completed')
+		});
+
+
+
+	{% endif %}
+								
+								}
+
+	function startReading() {
+
+
+		//Reading data
+		console.log("Start reading data from session:" + sessionID)
+		var source = new EventSource("{{ server }}/stream?channel=" + sessionID, {
+			headers: {
+				'Content-Type': 'text/event-stream', // <- Important headers
+				'Cache-Control': 'no-cache',
+				'Connection': 'keep-alive',
+				'X-Accel-Buffering': 'no'
+			}
+		});
+
+		source.addEventListener('message', function (e) {
+			try {
+				parseMessage(e);
+			} catch (err) {
+				console.error('Error parsing message:', err);
+			}
+		});
+		source.addEventListener('error', function (e) {
+			console.error('EventSource error:', e);
+		});
+
+
+
+
+
+	}
+
+
+
+	function sendStart() {
+
+		console.log('start sendStart function')
+		console.log('sessionID', sessionID)
+		console.log('streamID', streamID)
+
+
+		fetch('{{ server }}/' + sessionID + '/' + streamID + '/append', {
+			method: 'POST',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(JSON.stringify({ "controll": "START" , "user":"{{ user }}"}))
+		})
+
+
+
+	}
+
+	function parseMessage(e) {
+		console.log("Message:", e.data)
+		const data = JSON.parse(e.data);
+		console.log('data sender:', data.sender)
+		if (data.sender == "bot:" + streamID && "seq" in data) {
+			console.log("Response:", data)
+			addChatMessage(applyMD(data.seq.trim()), 'bot');
+			// get used context here to guide user to the video/transcript part where this was answered:
+			if ("context" in data && data.context.trim() != "" ) {
+				// console.log('data context: ', data.context)
+				const event = new CustomEvent('contextUpdated', { detail: data.context });
+				window.dispatchEvent(event);
+			}
+		}
+	}
+
+
+</script>

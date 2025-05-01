@@ -1,0 +1,22 @@
+<div class="loading-wrapper">
+    <div id="loading-container">
+        <div id="loading-bar"></div>
+        <div id="loading-text">0%</div>
+    </div>
+</div>
+
+
+    <script>
+            const loadingWrapper = document.querySelector('.loading-wrapper');
+            loadingWrapper.classList.remove('hidden');
+            // Function to dynamically set the loading percentage
+        function setLoadingPercentage(percentage) {
+            const loadingBar = document.getElementById('loading-bar');
+            const loadingText = document.getElementById('loading-text');
+
+            // Ensure the percentage is clamped between 0 and 100
+            percentage = Math.min(100, Math.max(0, percentage));
+            loadingBar.style.width = `${percentage}%`;
+            loadingText.textContent = `${percentage}%`;
+        }
+    </script>

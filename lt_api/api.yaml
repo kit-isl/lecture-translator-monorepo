@@ -1,0 +1,72 @@
+openapi: 3.0.0
+info:
+  title: /flows Mitmproxy2Swagger
+  version: 1.0.0
+servers:
+- url: ''
+  description: The default server
+paths:
+  /ltapi/{session}/{stream}/append:
+    post:
+      summary: POST append
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+  /ltapi/{session}/{stream}/get_output_language_component:
+    post:
+      summary: POST get_output_language_component
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+  /ltapi/{session}/get_previous_messages:
+    post:
+      summary: POST get_previous_messages
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+  /ltapi/{session}/addBotStream:
+    post:
+      summary: POST addbotstream
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: number
+  /ltapi/{session}/addSelectionToolStream:
+    post:
+      summary: POST addselectiontoolstream
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: number
+  /ltapi/{session}/addErrorCorrectionToolsStream:
+    post:
+      summary: POST adderrorcorrectiontoolsstream
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: number

@@ -1,0 +1,210 @@
+    <div class="advanced-options hidden">
+      <div class="form-row">
+        <div class="form-column">
+          <label for="language">Input Languages</label>
+        </div>
+        <div class="form-column">
+          <input name="langs-input" value="">
+          <select id="language" name="language" multiple required style="display: none;">
+            {% for l,display in asr_langs %}
+            <option value="{{ l }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="mtLanguage">Output Languages</label>
+        </div>
+        <div class="form-column">
+          <input name="mt-langs" value="">
+          <select id="mtLanguage" name="mtLanguage" multiple style="display: none;">
+            {% for l,display in mt_langs %}
+            <option value="{{ l }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="format">Presentation Format</label>
+        </div>
+        <div class="form-column">
+          <select id="format" name="format">
+            <option value="resending">Revision Mode</option>
+            <option value="online">Fixed Mode</option>
+            <option value="offline">Offline Mode</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="availability">Availability</label>
+        </div>
+        <div class="form-column">
+          <select id="availability" name="availability">
+            {% for v,n in availability %}
+            <option value="{{ v }}">{{ n }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="audioLanguage">Generated Audio Languages</label>
+        </div>
+        <div class="form-column">
+          <input name="tts-langs" value="">
+          <select id="audioLanguage" name="audioLanguage" multiple style="display: none;">
+            {% for l,display in tts_langs %}
+            <option value="{{ l }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      {% if 'admin' is in groups %}
+      <div class="form-row" style="display: none;">
+        <div class="form-column">
+          <label for="videoLanguage">Generated Video Language</label>
+        </div>
+        <div class="form-column">
+          <select id="videoLanguage" name="videoLanguage">
+            <option value="None">None</option>
+            {% for l,display in video_langs %}
+            <option value="{{ l }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="display: none;">
+        <div class="form-column">
+          <label for="video">Video for Facedubbing</label>
+        </div>
+        <div class="form-column">
+          <select id="video" name="video">
+            {% for display in videos %}
+            <option value="{{ display }}">{{ display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="smartChaptering">Smart Chaptering </label>
+        </div>
+        <div class="form-column">
+          <select id="smartChaptering" name="smartChaptering">
+            <option value="online_dynamic"> Online (Dynamic) </option>
+            <option value="online_static"> Online </option>
+            <option value="offline"> Offline </option>
+            <option value="streaming_simple"> None </option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="summarization">Summarization </label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="summarization" name="summarization" value="1" checked>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="saasr">Speakerdiarization</label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="saasr" name="saasr" value="1">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-column">
+          <label for="postproduction">Shortening</label>
+        </div>
+        <div class="form-column">
+          <select id="postproduction" name="postproduction" multiple>
+            <option value="50">50%</option>
+            <option value="70">70%</option>
+            <option value="90">90%</option>
+          </select>
+        </div>
+      </div>
+      {% if 'admin' is in groups %}
+      <div class="form-row" style="display: none;">
+        <div class="form-column">
+          <label for="demoMode">Demo mode</label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="demoMode" name="demoMode" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="memory">Context biasing <small>(only English/German)</small> </label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="memory" name="memory" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="errorCorrection">Error Correction</label>
+        </div>
+        <div class="form-column">
+          <select id="errorCorrection" name="errorCorrection">
+            <option value="None"> off </option>
+            <option value="dialog"> on </option>
+            <option value="dialog2"> on, but only buttons </option>
+          </select>
+        </div>
+      </div>
+      {% endif %}
+      <div class="form-row">
+        <div class="form-column">
+          <label for="errorCorrection">AI Assistant</label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="aiassistant" name="aiassistant" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="logging">Save Session <small>(can be deleted at the end)</small></label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="logging" name="logging" value="1" checked>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="save_profile">Allow participants to join with own microphone</label>
+        </div>
+        <div class="form-column">
+          <input type="checkbox" id="type" name="type">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-column">
+          <label for="shorten">Make this session available under</label>
+        </div>
+        <div class="form-column">
+          <input type="text" id="shorten" name="shorten" value="https://lecture-translator.kit.edu/webapi/shorten/lecture" pattern=".*/webapi/shorten/.*">
+        </div>
+      </div>
+      <div class="form-row">
+        <!--
+        <div class="form-column">
+          <label for="save_profile">Update Selected Profile</label>
+        </div>
+        -->
+        <div class="form-column">
+          <input type="checkbox" id="save_profile" name="save_profile" value="1" checked hidden>
+        </div>
+      </div>
+    </div>
+
+

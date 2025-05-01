@@ -1,0 +1,15 @@
+git+https://gitlab.kit.edu/kit/isl-ai4lt/lt-middleware/qbmediator.git
+requests
+torch==1.13.1
+torchaudio==0.13.1
+transformers==4.24.0
+datasets==2.6.1
+jiwer==2.5.1
+SoundFile
+mir-eval==0.7
+asteroid==0.6.0
+espnet==202209
+librosa==0.10.1
+python-multipart
+typeguard==2.13.3
+moviepy==1.0.3

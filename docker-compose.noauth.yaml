@@ -1,0 +1,32 @@
+version: "3.3"
+
+services:
+  dex:
+    image: alpine
+    command: sleep 99999999999
+
+  traefik-forward-auth:
+    image: alpine
+    command: sleep 99999999999
+    labels:
+      - 'traefik.http.middlewares.traefik-forward-auth.forwardauth.trustForwardHeader=true'
+
+  ltapi:
+    labels:
+      - 'traefik.http.routers.ltapi.middlewares='
+      - 'traefik.http.routers.webapi.middlewares=webapi-compat'
+
+  ltapi-stream:
+    labels:
+      - 'traefik.http.routers.ltapi-stream.middlewares='
+      - 'traefik.http.routers.webapi-stream.middlewares=webapi-compat'
+
+  frontend:
+    environment:
+      USE_AUTH: 0
+    labels:
+      - 'traefik.http.routers.frontend.middlewares=logout'
+
+  archive:
+    labels:
+      - 'traefik.http.routers.archive.middlewares='

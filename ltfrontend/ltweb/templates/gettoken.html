@@ -1,0 +1,41 @@
+<html>
+<head>
+<style>
+code {
+  font-family: Consolas,"courier new";
+  color: #333333;
+  background-color: #f1f1f1;
+  padding: 2px;
+  font-size: 100%;
+}
+</style>
+</head>
+<body>
+
+Here's your token:
+<pre>
+
+
+    {{ token }}
+
+
+
+</pre>
+You may use it in your HTTP requests as follows:
+<br>
+<pre><code>
+```python
+import requests
+requests.post(
+    'https://lt2srv.iar.kit.edu/ltapi/...',
+    cookies={
+        '_forward_auth': '{{ token }}'
+    }
+)
+```
+</code>
+</pre>
+<br>
+
+</body>
+</html>

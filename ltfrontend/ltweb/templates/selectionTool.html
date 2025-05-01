@@ -1,0 +1,417 @@
+<script>
+
+/*
+	Assumptions:
+		- selected elements must have a parent that is a span with the attributes start and end time and a parent
+		  that has the class window that has a child with the class window-header, otherwise no selection
+		  should be sent
+		- the start time is strictly monotonously increasing
+*/
+
+var selectionToolStreamId = null;
+var currentSelection = null;
+var isSelectModeActive = true;
+var lastSelection = null;
+var isMouseDown = false;
+var lastMouseDownTime = null;
+var lastMouseDownDate = null;
+var bufferedReplaceActions = Array();
+var mouseupEventTimer = null;
+
+function initSelectionToolConnection() {
+	fetch('{{ server }}/{{ session }}/addSelectionToolStream', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		}
+	})
+	.then((response) => response.json())
+	.then((data) => {
+		console.log('Selection tool stream ID:', data);
+		selectionToolStreamId = data;
+		setTimeout(keeAliveSelectionTool, 60000);
+	});
+}
+
+setTimeout(initSelectionToolConnection, 2000);
+
+function sendSelectionToolMessage(messageObject) {
+	if (selectionToolStreamId === null) {
+		console.log('no connection');
+		return;
+	}
+
+	fetch('{{ server }}/{{ session }}/' + selectionToolStreamId + '/append', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(JSON.stringify(messageObject))
+	}).catch(error => {
+        console.error('There was a problem at fetch selectionToolStreamId', error);
+    });
+}
+
+function keeAliveSelectionTool() {
+	sendSelectionToolMessage({'action': 'keep-alive'});
+	setTimeout(keeAliveSelectionTool, 60000);
+}
+
+function sendSelection(selection, lastMouseDownDate, downDuration) {
+	const sentSelection = sendSelectionIfPossible(selection, lastMouseDownDate, downDuration);
+	if (sentSelection !== null) {
+		currentSelection = sentSelection;
+
+		document.querySelectorAll('.edit-button').forEach(button => {
+			button.style.visibility = 'hidden';
+		});
+
+		const editButtonElement = document.getElementById(`edit-button-${sentSelection[0]}`);
+		if (editButtonElement !== null && (typeof correctionModeDeactivated === 'undefined' || !correctionModeDeactivated)) {
+			editButtonElement.style.visibility = 'visible';
+		}
+	} else {
+		{% if selection_tool_able_to_remove_ranges == True %}
+			document.getSelection().removeAllRanges();
+		{% endif %}
+	}
+}
+
+function sendSelectionIfPossible(selection, lastMouseDownDate, downDuration) {
+	const windowHeaderName = getWindowHeaderName(selection);
+	if (windowHeaderName === null) {
+		return null;
+	}
+
+	const nodesInOccurenceDirection = getNodesInOccurenceDirection(selection);
+	if (nodesInOccurenceDirection === null) {
+		return null;
+	}
+	const [startEndSpanFirst, startEndSpanLast, nodeFirst, nodeLast, offsetFirst, offsetLast] = nodesInOccurenceDirection;
+
+	const startTimeFirst = parseFloat(startEndSpanFirst.getAttribute('start'));
+	const endTimeFirst = parseFloat(startEndSpanFirst.getAttribute('end'));
+	const startTimeLast = parseFloat(startEndSpanLast.getAttribute('start'));
+	const endTimeLast = parseFloat(startEndSpanLast.getAttribute('end'));
+
+	const selectedText = getText(startEndSpanFirst, startEndSpanLast, nodeFirst, nodeLast, offsetFirst, offsetLast);
+
+	const [, selectedTextFirstSpan, beforeSelectedTextFirstSpan, afterSelectedTextFirstSpan] = getTextFromNode(startEndSpanFirst, nodeFirst, nodeLast, offsetFirst, offsetLast, -1);
+	const withinBorders = startEndSpanFirst === startEndSpanLast ? -1 : 0;
+	const [, selectedTextLastSpan, beforeSelectedTextLastSpan, afterSelectedTextLastSpan] = getTextFromNode(startEndSpanLast, nodeFirst, nodeLast, offsetFirst, offsetLast, withinBorders);
+	const completeTextFirstSpan = beforeSelectedTextFirstSpan + selectedTextFirstSpan + afterSelectedTextFirstSpan;
+	const completeTextLastSpan = beforeSelectedTextLastSpan + selectedTextLastSpan + afterSelectedTextLastSpan;
+
+	const timeOffsetFirst = completeTextFirstSpan.length > 0 ? (endTimeFirst - startTimeFirst) * (beforeSelectedTextFirstSpan.length / completeTextFirstSpan.length) : 0;
+	const timeOffsetLast = completeTextLastSpan.length > 0 ? (endTimeLast - startTimeLast) * (afterSelectedTextLastSpan.length / completeTextLastSpan.length) : 0;
+	const adjustedStartTimeFirst = startTimeFirst + timeOffsetFirst;
+	const adjustedEndTimeLast = endTimeLast - timeOffsetLast;
+
+	let actionText = selection.anchorNode === selection.focusNode && selection.anchorOffset === selection.focusOffset ? 'selectionCaret' :  'selection';
+
+	if (actionText == 'selection' && selectedText === '') {
+		return null;
+	}
+
+	if (actionText == 'selectionCaret' && adjustedEndTimeLast - adjustedStartTimeFirst > 0.98) {
+		return null;
+	}
+
+	console.log(windowHeaderName, adjustedStartTimeFirst, adjustedEndTimeLast, startTimeFirst, endTimeLast, selectedText, actionText);
+	sendSelectionToolMessage({'action': actionText, 'component': windowHeaderName, 'start': adjustedStartTimeFirst, 'end': adjustedEndTimeLast, 'start_first_span': startTimeFirst, 'end_last_span': endTimeLast, 'seq': selectedText, 'mouse_down_date': lastMouseDownDate, 'mouse_down_duration': downDuration});
+	return [windowHeaderName, adjustedStartTimeFirst, adjustedEndTimeLast, selectedText, startEndSpanFirst, startEndSpanLast, startTimeFirst, endTimeLast];
+}
+
+function getWindowHeaderName(selection) {
+	const windowAnchor = getParentWithClass(selection.anchorNode, 'window');
+	const windowFocus = getParentWithClass(selection.anchorNode, 'window');
+	if (windowAnchor === null || windowAnchor !== windowFocus) {
+		return null;
+	}
+
+	for (const childNode of windowAnchor.childNodes) {
+		if (childNode.className === 'window-header') {
+			return childNode.innerText.split('\n', 2)[0];
+		}
+	}
+	if (windowHeaderName === null) {
+		return null;
+	}
+}
+
+function getParentWithClass(node, className) {
+	if (!node || node === document.body) {
+		return null;
+	}
+
+	const parentElement = node.parentElement;
+
+	if (parentElement.className === className) {
+		return parentElement;
+	}
+
+	return getParentWithClass(parentElement, className);
+}
+
+function getNodesInOccurenceDirection(selection) {
+	let startEndSpanFirst;
+	let startEndSpanLast;
+	let nodeFirst;
+	let nodeLast;
+	let offsetFirst;
+	let offsetLast;
+	let direction = selection.direction;
+
+	let startEndSpanAnchor = getParentSpanWithStartAndEnd(selection.anchorNode);
+	if (startEndSpanAnchor === null) {
+		return null;
+	}
+
+	if (selection.anchorNode === selection.focusNode) {
+		startEndSpanFirst = startEndSpanAnchor;
+		startEndSpanLast = startEndSpanFirst;
+		nodeFirst = selection.anchorNode;
+		nodeLast = selection.focusNode;
+		offsetFirst = Math.min(selection.anchorOffset, selection.focusOffset);
+		offsetLast = Math.max(selection.anchorOffset, selection.focusOffset);
+	} else {
+		let startEndSpanFocus = getParentSpanWithStartAndEnd(selection.focusNode);
+		if (startEndSpanFocus === null) {
+			return null;
+		}
+
+		if (startEndSpanAnchor === startEndSpanFocus) {
+			startEndSpanFirst = startEndSpanAnchor;
+			startEndSpanLast = startEndSpanFocus;
+
+			firstFoundNode = getFirstFoundNode(startEndSpanAnchor, selection.anchorNode, selection.focusNode);
+			if (firstFoundNode === selection.anchorNode) {
+				nodeFirst = selection.anchorNode;
+				nodeLast = selection.focusNode;
+				offsetFirst = selection.anchorOffset;
+				offsetLast = selection.focusOffset;
+			} else {
+				nodeFirst = selection.focusNode;
+				nodeLast = selection.anchorNode;
+				offsetFirst = selection.focusOffset;
+				offsetLast = selection.anchorOffset;
+			}
+		} else if (startEndSpanAnchor.getAttribute('start') < startEndSpanFocus.getAttribute('start')) {
+			startEndSpanFirst = startEndSpanAnchor;
+			startEndSpanLast = startEndSpanFocus;
+			nodeFirst = selection.anchorNode;
+			nodeLast = selection.focusNode;
+			offsetFirst = selection.anchorOffset;
+			offsetLast = selection.focusOffset;
+		} else {
+			startEndSpanFirst = startEndSpanFocus;
+			startEndSpanLast = startEndSpanAnchor;
+			nodeFirst = selection.focusNode;
+			nodeLast = selection.anchorNode;
+			offsetFirst = selection.focusOffset;
+			offsetLast = selection.anchorOffset;
+		}
+	}
+
+	if (nodeLast.nodeName === 'SPAN' && nodeLast.getAttribute('start') !== null && direction === 'backward') {
+		tmpNodeLast = nodeFirst;
+		nodeFirst = nodeLast.firstChild;
+		nodeLast = tmpNodeLast;
+		tmpOffsetLast = offsetFirst;
+		offsetFirst = offsetLast;
+		offsetLast = tmpOffsetLast;
+	}
+
+	return [startEndSpanFirst, startEndSpanLast, nodeFirst, nodeLast, offsetFirst, offsetLast];
+}
+
+function getParentSpanWithStartAndEnd(node) {
+	if (!node || node === document.body) {
+		return null;
+	}
+
+	if (node.nodeName === 'SPAN' && node.getAttribute('start') !== null &&
+		node.getAttribute('end') !== null) {
+		return node;
+	}
+
+	return getParentSpanWithStartAndEnd(node.parentElement);
+}
+
+function getFirstFoundNode(parentNode, anchorNode, focusNode) {
+	if (!parentNode.hasChildNodes()) {
+		return null;
+	}
+
+	for (const childNode of parentNode.childNodes) {
+		if (childNode === anchorNode) {
+			return anchorNode;
+		}
+		if (childNode === focusNode) {
+			return focusNode;
+		}
+
+		const firstFoundNode = getFirstFoundNode(childNode, anchorNode, focusNode)
+		if (firstFoundNode !== null) {
+			return firstFoundNode;
+		}
+
+	}
+	return null;
+}
+
+function getNodeIndexInStartEndSpan(parentNode, selectionNode) {
+	let found = false;
+	let index = 0;
+
+	if (!parentNode.hasChildNodes()) {
+		return [found, index];
+	}
+
+	for (const childNode of parentNode.childNodes) {
+		if (childNode === selectionNode) {
+			return [true, index];
+		}
+
+		const [foundSub, indexSub] = getNodeIndexInStartEndSpan(childNode, selectionNode);
+		index += indexSub;
+		if (foundSub) {
+			return [foundSub, index];
+		}
+
+		index++;
+	}
+
+	return [found, index];
+}
+
+function getText(startEndSpanFirst, startEndSpanLast, nodeFirst, nodeLast, offsetFirst, offsetLast) {
+	let withinBorders = -1;
+	let selectedText = '';
+	let selectedTextPart;
+	let beforeSelectedTextPart;
+	let afterSelectedTextPart;
+
+	let node = startEndSpanFirst;
+	do {
+		if (node.nodeName === 'SPAN') {
+			[withinBorders, selectedTextPart, beforeSelectedTextPart, afterSelectedTextPart] = getTextFromNode(node, nodeFirst, nodeLast, offsetFirst, offsetLast, withinBorders);
+			selectedText += selectedTextPart;
+		}
+		node = node.nextSibling;
+	} while (node !== null && node.previousSibling != startEndSpanLast);
+
+	return selectedText;
+}
+
+function getTextFromNode(node, startNode, endNode, startOffset, endOffset, withinBorders) {
+	let selectedText = '';
+	let beforeSelectedText = '';
+	let afterSelectedText = '';
+	let selectedTextPart;
+	let beforeSelectedTextPart;
+	let afterSelectedTextPart;
+
+	if (node === startNode && node === endNode) {
+		withinBorders = 1;
+		if (typeof node.data === 'undefined') {
+			return [withinBorders, '', '', ''];
+		}
+		return [withinBorders, node.data.substring(startOffset, endOffset) , node.data.substring(0, startOffset), node.data.substring(endOffset, node.data.length)];
+	}
+
+	if (node === startNode) {
+		withinBorders = 0;
+		if (typeof node.data === 'undefined') {
+			return [withinBorders, '', '', ''];
+		}
+		return [withinBorders, node.data.substring(startOffset, node.data.length) , node.data.substring(0, startOffset), ''];
+	}
+
+	if (node === endNode) {
+		withinBorders = 1;
+		if (typeof node.data === 'undefined') {
+			return [withinBorders, '', '', ''];
+		}
+		return [withinBorders, node.data.substring(0, endOffset), '', node.data.substring(endOffset, node.data.length)];
+	}
+
+	if (!node.hasChildNodes()) {
+		if (typeof node.data === 'undefined') {
+			return [withinBorders, '', '', ''];
+		}
+
+		if (withinBorders === 0) {
+			return [withinBorders, node.data, '', ''];
+		}
+
+		if (withinBorders < 0) {
+			return [withinBorders, '', node.data, ''];
+		}
+
+		if (typeof node.data === 'undefined') {
+			return [withinBorders, '', '', ''];
+		}
+
+		return [withinBorders, '', '', node.data];
+	}
+
+	for (const childNode of node.childNodes) {
+		[withinBorders, selectedTextPart, beforeSelectedTextPart, afterSelectedTextPart] = getTextFromNode(childNode, startNode, endNode, startOffset, endOffset, withinBorders);
+		selectedText += selectedTextPart;
+		beforeSelectedText += beforeSelectedTextPart;
+		afterSelectedText += afterSelectedTextPart;
+	}
+
+	return [withinBorders, selectedText, beforeSelectedText, afterSelectedText];
+}
+
+
+
+document.addEventListener("selectionchange", () => {
+	if (isSelectModeActive) {
+		lastSelection = document.getSelection();
+	}
+});
+
+function mouseupEvent(lastMouseDownDate, downDuration) {
+	isMouseDown = false;
+	mouseupEventTimer = null;
+
+	for (const replaceAction of bufferedReplaceActions) {
+		show_text(replaceAction.w, replaceAction.seq, replaceAction.start, replaceAction.end,
+			replaceAction.type, replaceAction.action, replaceAction.spk, replaceAction.additionalClasses);
+	}
+
+	bufferedReplaceActions = Array();
+
+	if (lastSelection !== null) {
+		sendSelection(lastSelection, lastMouseDownDate, downDuration);
+		lastSelection = null;
+	} else {
+		{% if selection_tool_able_to_remove_ranges == True %}
+			document.getSelection().removeAllRanges();
+		{% endif %}
+	}
+}
+
+document.addEventListener("mouseup", (event) => {
+	const downDuration = performance.now() - lastMouseDownTime;
+
+	if (mouseupEventTimer !== null) {
+		clearTimeout(mouseupEventTimer);
+	}
+
+	mouseupEventTimer = setTimeout(mouseupEvent, 500, lastMouseDownDate, downDuration);
+});
+
+document.addEventListener("mousedown", (event) => {
+	isMouseDown = true;
+	lastMouseUpTime = null;
+	lastMouseDownTime = performance.now();
+	lastMouseDownDate = Date.now()
+});
+
+</script>

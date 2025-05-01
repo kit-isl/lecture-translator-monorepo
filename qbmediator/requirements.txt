@@ -1,0 +1,6 @@
+redis
+pika
+jsons
+numpy
+kafka-python
+sacremoses

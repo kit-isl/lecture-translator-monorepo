@@ -1,0 +1,19 @@
+version: "3.3"
+
+services:
+  evaluation_client:
+    image: registry.isl.iar.kit.edu/evaluation_client
+    build: ./evaluation_client
+    networks:
+      - LTPipeline
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - $PWD/create_configs_${experiment_name:-cascaded+offline}.sh:/app/lt-evaluation/create_configs_${experiment_name:-cascaded+offline}.sh:ro
+      - $PWD/run_evaluate_pipeline.sh:/app/lt-evaluation/run_evaluate_pipeline.sh:ro
+      - 'evaluation_data:/app/lt-evaluation/data'
+    environment: 
+      experiment_name: ${experiment_name:-cascaded+offline}
+
+volumes:
+  evaluation_data: {}
